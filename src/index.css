@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', 'Noto Sans Arabic', system-ui, -apple-system, sans-serif;
+  }
+}
+
+.font-urdu {
+  font-family: 'Noto Sans Arabic', 'Noto Nastaliq Urdu', system-ui, sans-serif;
+  direction: rtl;
+}
+
+.font-mono-receipt {
+  font-family: 'Space Mono', 'Noto Sans Arabic', monospace, courier;
+}
+
+/* Thermal Printer Direct Print Optimizations (POS-80 & POS-58) */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide entire web app interface */
+  #main-app-container,
+  nav,
+  header,
+  aside,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Expose strictly the print area */
+  #receipt-print-area {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    margin: 0 auto !important;
+    padding: 2mm 3mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Space Mono', 'Noto Sans Arabic', monospace !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Prevent page breaks inside bill */
+  #receipt-print-area * {
+    color: #000000 !important;
+    background: transparent !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Ensure thermal images/logos print high-contrast pure black */
+  #receipt-print-area img {
+    filter: contrast(150%) grayscale(100%) !important;
+    max-width: 100% !important;
+  }
+
+  @page {
+    margin: 0mm;
+    size: auto;
+  }
+}
+
