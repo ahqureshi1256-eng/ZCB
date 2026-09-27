@@ -66,12 +66,12 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
   // 1-Click WhatsApp Share
   const handleShareWhatsApp = () => {
     const text =
-      `🍗 *ذائقہ چکن بریانی (${shop.shortName || 'ZCB'}) - آن لائن آرڈر شروع!* 🍗\n\n` +
-      `گرما گرم دیگی چکن بریانی، شامی کباب اور کولڈ ڈرنکس اب گھر بیٹھے بائیک ڈیلیوری سے حاصل کریں۔\n\n` +
-      `👇 *آن لائن آرڈر کے لیے اس لنک پر کلک کریں:*\n` +
+      `🍗 *${shop.shopNameEn || 'Zaiqa Chicken Biryani'} (${shop.shortName || 'ZCB'}) - Online Ordering Now Open!* 🍗\n\n` +
+      `Fresh hot Chicken Biryani, Shami Kababs, and chilled drinks delivered right to your doorstep.\n\n` +
+      `👇 *Click the link below to order online:*\n` +
       `${customerUrl}\n\n` +
-      `🛵 فاسٹ بائیک ہوم ڈیلیوری (25-35 منٹ)\n` +
-      `📞 رابطہ / واٹس ایپ: ${shop.phone}`;
+      `🛵 Fast Delivery (25-35 mins)\n` +
+      `📞 Contact / WhatsApp: ${shop.phone}`;
 
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -102,14 +102,14 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase tracking-wider bg-stone-950 text-amber-300 px-2 py-0.5 rounded-full">
-                  TIKTOK & WHATSAPP LINK
+                  SHAREABLE CUSTOMER LINK
                 </span>
                 <span className="text-[11px] font-bold text-stone-900">
-                  کسٹمر آرڈرنگ لنک
+                  Online Menu & QR
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-stone-950 mt-0.5">
-                کسٹمر کے لیے ویب سائٹ کا لنک
+                Customer Ordering Website Link
               </h2>
             </div>
           </div>
@@ -129,10 +129,10 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-amber-400" />
-                <span>کسٹمر ویب سائٹ کا مکمل لنک (Customer Ordering Link)</span>
+                <span>Customer Ordering Link</span>
               </label>
               <span className="text-[11px] text-stone-400 font-medium">
-                یہ لنک ٹک ٹاک اور واٹس ایپ پر شیئر کریں
+                Share this link on WhatsApp & Social Media
               </span>
             </div>
 
@@ -154,12 +154,12 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
                   {copied ? (
                     <>
                       <Check className="w-4 h-4 stroke-[3]" />
-                      <span>کاپی ہوگیا! (Copied)</span>
+                      <span>Copied!</span>
                     </>
                   ) : (
                     <>
                       <Copy className="w-4 h-4 stroke-[2.5]" />
-                      <span>لنک کاپی کریں</span>
+                      <span>Copy Link</span>
                     </>
                   )}
                 </button>
@@ -171,7 +171,7 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
                   title="Open in new browser tab to test as a customer"
                 >
                   <ExternalLink className="w-4 h-4 text-amber-400" />
-                  <span className="hidden sm:inline">نئی ٹیب میں کھولیں</span>
+                  <span className="hidden sm:inline">Open in New Tab</span>
                 </button>
               </div>
             </div>
@@ -180,31 +180,31 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
               <div className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5 bg-emerald-950/40 p-2 rounded-lg border border-emerald-500/30 animate-in fade-in">
                 <Check className="w-4 h-4" />
                 <span>
-                  لنک کاپی ہو چکا ہے! اب آپ اسے TikTok کے بائیو یا WhatsApp چیٹس اور اسٹیٹس پر پیسٹ کر سکتے ہیں۔
+                  Link copied to clipboard! You can paste it into your WhatsApp status, messages, or social profiles.
                 </span>
               </div>
             )}
 
-            {/* Public Access 403-Free Badge */}
+            {/* Public Access Badge */}
             <div className="flex items-center gap-2 px-3 py-2 bg-emerald-950/50 border border-emerald-500/40 rounded-xl text-[11px] text-emerald-300">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
-                <strong>403 Error Free Link:</strong> یہ 100% پبلک لنک ہے جو بغیر گوگل لاگ اِن کے ہر کسٹمر کے موبائل، واٹس ایپ اور ٹک ٹاک پر فوراً کھلتا ہے۔
+                <strong>Direct Public Access:</strong> Customers can open this link directly without requiring any login or app installation.
               </span>
             </div>
           </div>
 
-          {/* WhatsApp Direct Share & TikTok Bio Instructions */}
+          {/* WhatsApp Direct Share & Social Bio */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* WhatsApp Share Card */}
             <div className="bg-stone-950 p-4 rounded-2xl border border-emerald-500/30 flex flex-col justify-between space-y-3">
               <div>
                 <div className="flex items-center gap-2 text-emerald-400 font-black text-sm">
                   <MessageCircle className="w-5 h-5 text-emerald-400" />
-                  <span>1. واٹس ایپ پر ایک کلک میں بھیجیں</span>
+                  <span>1. Share via WhatsApp</span>
                 </div>
                 <p className="text-xs text-stone-300 mt-1.5 leading-relaxed">
-                  اپنے تمام کسٹمرز، گروپس اور واٹس ایپ اسٹیٹس پر ZCB کا مکمل مینو اور آرڈر لنک فوراً شیئر کریں۔
+                  Share your restaurant's digital menu link directly with customers and status updates in 1 click.
                 </p>
               </div>
 
@@ -214,25 +214,25 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
                 className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4 stroke-[2.5]" />
-                <span>WhatsApp پر شیئر کریں (Share)</span>
+                <span>Share on WhatsApp</span>
               </button>
             </div>
 
-            {/* TikTok Guide Card */}
+            {/* Social Profile Card */}
             <div className="bg-stone-950 p-4 rounded-2xl border border-pink-500/30 space-y-2">
               <div className="flex items-center gap-2 text-pink-400 font-black text-sm">
                 <Smartphone className="w-5 h-5 text-pink-400" />
-                <span>2. ٹک ٹاک بائیو (TikTok Bio) میں لگانے کا طریقہ</span>
+                <span>2. Add to Social Media Profile</span>
               </div>
               <ul className="text-xs text-stone-300 space-y-1.5 list-disc list-inside leading-relaxed">
                 <li>
-                  ٹک ٹاک ایپ میں جا کر <strong>Edit Profile</strong> پر کلک کریں۔
+                  Open your profile in TikTok, Instagram, or Facebook.
                 </li>
                 <li>
-                  اوپر کاپی کیا گیا لنک <strong>Website</strong> یا <strong>Bio</strong> میں پیسٹ کر دیں۔
+                  Paste the copied link in your <strong>Website</strong> or <strong>Bio</strong> field.
                 </li>
                 <li>
-                  اپنی ویڈیوز میں کہیں: <em>"بریانی آرڈر کرنے کے لیے بائیو والے لنک پر کلک کریں!"</em>
+                  Tell customers: <em>"Tap the link in our bio to order hot Chicken Biryani!"</em>
                 </li>
               </ul>
             </div>
@@ -257,10 +257,10 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
             <div className="flex-1 space-y-2 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-1.5 text-amber-300 font-bold text-sm">
                 <QrCode className="w-4 h-4" />
-                <span>کسٹمر آرڈرنگ کیو آر کوڈ (Customer QR Code)</span>
+                <span>Customer Ordering QR Code</span>
               </div>
               <p className="text-xs text-stone-300 leading-relaxed">
-                کسٹمرز اپنے موبائل کیمرے سے یہ QR کوڈ اسکین کر کے فوراً آن لائن ویب سائٹ کھول سکتے ہیں۔ آپ اسے دکان کے کاؤنٹر، پمفلٹ، یا ویڈیو میں بھی دکھا سکتے ہیں۔
+                Customers can scan this QR code with their mobile phone camera to open the menu instantly. Print it for table counters, flyers, or takeaway bags.
               </p>
               <div className="pt-1 flex flex-wrap gap-2 justify-center sm:justify-start">
                 <button
@@ -269,7 +269,7 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
                   className="px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl border border-stone-700 flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5 text-amber-400" />
-                  <span>QR کوڈ ڈاؤن لوڈ کریں (PNG)</span>
+                  <span>Download QR Code (PNG)</span>
                 </button>
               </div>
             </div>
@@ -279,7 +279,7 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
           <div className="p-3 bg-amber-950/40 border border-amber-500/30 rounded-2xl text-xs text-amber-200/90 flex items-start gap-2.5">
             <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <p className="leading-relaxed">
-              <strong>دونوں الگ الگ ہیں:</strong> جب آپ کا کسٹمر یہ لنک کھولے گا تو اس کے پاس صرف اور صرف خوبصورت کسٹمر ویب سائٹ کھلے گی (جہاں سے وہ بریانی، کباب، کولڈ ڈرنک چن کر بائیک ڈیلیوری ایڈریس ڈال سکے گا)۔ آپ کا کیشیئر POS ٹرمینل محفوظ رہے گا اور جیسے ہی کسٹمر آرڈر کرے گا، آپ کے پاس زور سے گھنٹی بولے گی: <em>"اے مزمل، آرڈر اٹھاؤ!"</em>
+              <strong>Order Flow:</strong> Customers see an intuitive ordering website where they select items and enter their delivery details. When an order is placed, your POS counter terminal receives an instant alert with sound and voice announcement.
             </p>
           </div>
         </div>
@@ -291,7 +291,7 @@ export const ShareLinkModal: React.FC<ShareLinkModalProps> = ({
             onClick={onClose}
             className="px-6 py-2.5 bg-stone-800 hover:bg-stone-700 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
           >
-            بند کریں (Close)
+            Close
           </button>
         </div>
       </div>

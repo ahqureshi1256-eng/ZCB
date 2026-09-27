@@ -21,7 +21,7 @@ interface InstallAppModalProps {
 export const InstallAppModal: React.FC<InstallAppModalProps> = ({
   isOpen,
   onClose,
-  shopName = 'ZCB - ذائقہ چکن بریانی',
+  shopName = 'Zaiqa Chicken Biryani',
 }) => {
   const { isInstallable, isInstalled, isIOS, isAndroid, install } = usePWAInstall();
   const [installing, setInstalling] = useState(false);
@@ -54,11 +54,11 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
                   MOBILE APP
                 </span>
                 <span className="text-[11px] font-bold text-stone-900">
-                  موبائل ایپ انسٹال کریں
+                  Direct Installation
                 </span>
               </div>
               <h2 className="text-xl font-black tracking-tight text-stone-950">
-                موبائل میں ایپ ڈاؤن لوڈ کریں
+                Install Mobile App
               </h2>
             </div>
           </div>
@@ -85,14 +85,14 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
                 {shopName}
               </h3>
               <p className="text-xs text-amber-300 font-medium">
-                فاسٹ فوڈ، بریانی اور آن لائن آرڈرنگ ایپ
+                POS Billing, Kitchen & Online Orders
               </p>
               <div className="flex items-center gap-2 mt-1 text-[11px] text-stone-400">
-                <span>⚡ تیز رفتار</span>
+                <span>⚡ Fast Launch</span>
                 <span>•</span>
-                <span>📱 فل اسکرین</span>
+                <span>📱 Fullscreen</span>
                 <span>•</span>
-                <span>🚀 0 MB اسٹوریج</span>
+                <span>🚀 Offline Capable</span>
               </div>
             </div>
           </div>
@@ -102,10 +102,10 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
             <div className="p-4 bg-emerald-950/60 border border-emerald-500/50 rounded-2xl text-center space-y-2">
               <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto" />
               <p className="font-black text-emerald-300 text-sm">
-                ایپ آپ کے موبائل میں پہلے سے انسٹال ہو چکی ہے!
+                App is already installed on your device!
               </p>
               <p className="text-xs text-stone-300">
-                آپ اپنے موبائل کی ہوم اسکرین سے ZCB آئیکن پر کلک کر کے اسے کسی بھی وقت چلا سکتے ہیں۔
+                You can launch it anytime from your home screen or app drawer.
               </p>
             </div>
           )}
@@ -119,11 +119,10 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
                   if (isInstallable) {
                     await handleInstallClick();
                   } else {
-                    // Explain exactly what to do based on platform
                     if (isIOS) {
-                      alert('آئی فون پر انسٹال کے لیے:\n1. نیچے شیئر (Share) کا تیر والا بٹن دبائیں۔\n2. "Add to Home Screen" منتخب کریں۔\nایپ فوراً ہوم اسکرین پر آ جائے گی!');
+                      alert('To install on iPhone / iPad:\n1. Tap the Share icon (box with arrow) in Safari.\n2. Select "Add to Home Screen".\n3. Tap "Add" in top right corner.');
                     } else {
-                      alert('اینڈرائیڈ موبائل پر انسٹال کے لیے:\n1. اوپر دائیں کونے میں کروم براؤزر کے تین نقطوں (⋮) پر کلک کریں۔\n2. "Install app" یا "Add to Home screen" منتخب کریں۔\nZCB ایپ کا آئیکن آپ کے موبائل میں شامل ہو جائے گا!');
+                      alert('To install on Android:\n1. Tap the three dots (⋮) menu in Chrome.\n2. Tap "Install app" or "Add to Home screen".');
                     }
                   }
                 }}
@@ -132,37 +131,37 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
               >
                 <Download className="w-5 h-5 stroke-[2.5]" />
                 <span>
-                  {installing ? 'انسٹال ہو رہی ہے...' : isInstallable ? '📲 ایک کلک میں ایپ ڈاؤن لوڈ کریں (Install Now)' : '📲 موبائل میں ایپ ڈاؤن لوڈ کا طریقہ (Instructions)'}
+                  {installing ? 'Installing...' : isInstallable ? '📲 Install App Now (1-Click)' : '📲 Installation Instructions'}
                 </span>
               </button>
 
               <div className="bg-amber-950/40 border border-amber-500/40 p-3 rounded-2xl text-xs text-amber-200 space-y-1">
                 <p className="font-bold flex items-center gap-1.5">
-                  <span>💡 موبائل پر ڈاؤن لوڈ کیوں نہیں ہو رہی تھی؟</span>
+                  <span>💡 Tip for Social Apps (TikTok, WhatsApp, Facebook):</span>
                 </p>
                 <p className="text-[11px] text-stone-300 leading-relaxed">
-                  اگر آپ <strong>TikTok، WhatsApp یا فیس بک</strong> کے اندر ہیں، تو ایپ ڈاؤن لوڈ نہیں ہو پاتی۔ پہلے اوپر تین نقطوں (⋮) پر کلک کر کے <strong>"Open in Chrome" (کروم میں کھولیں)</strong> کریں، پھر کروم مینو سے <strong>"Install App"</strong> یا <strong>"Add to Home Screen"</strong> پر کلک کریں۔
+                  If you are inside an in-app browser (like WhatsApp or TikTok), tap the three dots (⋮) in top right and choose <strong>"Open in Chrome"</strong> or <strong>"Open in Safari"</strong> to enable 1-click install.
                 </p>
               </div>
             </div>
           )}
 
-          {/* Android Guide (If in in-app browser like WhatsApp/TikTok) */}
+          {/* Android Guide */}
           {(!isInstallable || isAndroid) && !isInstalled && (
             <div className="bg-stone-950 p-4 rounded-2xl border border-stone-800 space-y-3">
               <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
                 <Smartphone className="w-4 h-4 text-amber-400" />
-                <span>اینڈرائڈ (Android / Chrome) پر ڈاؤن لوڈ کا طریقہ:</span>
+                <span>Android / Chrome Instructions:</span>
               </div>
               <ol className="text-xs text-stone-300 space-y-2 list-decimal list-inside leading-relaxed">
                 <li>
-                  اگر آپ <strong>TikTok</strong> یا <strong>WhatsApp</strong> کے اندر ہیں، تو اوپر دائیں جانب <strong>تین نقطوں (⋮)</strong> پر کلک کریں اور <strong>"Open in Chrome" (کروم میں کھولیں)</strong> منتخب کریں۔
+                  Open Chrome browser and navigate to this page.
                 </li>
                 <li>
-                  کروم براؤزر کے مینو (تین نقطے ⋮) پر کلک کریں۔
+                  Tap the Chrome menu (three dots ⋮ in top right).
                 </li>
                 <li>
-                  <strong>"Install App"</strong> یا <strong>"Add to Home screen" (ہوم اسکرین پر شامل کریں)</strong> پر ٹیپ کریں۔
+                  Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
                 </li>
               </ol>
             </div>
@@ -173,17 +172,17 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
             <div className="bg-stone-950 p-4 rounded-2xl border border-stone-800 space-y-3">
               <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
                 <Share2 className="w-4 h-4 text-amber-400" />
-                <span>آئی فون (iPhone / Safari) پر ڈاؤن لوڈ کا طریقہ:</span>
+                <span>iPhone / Safari Instructions:</span>
               </div>
               <ol className="text-xs text-stone-300 space-y-2 list-decimal list-inside leading-relaxed">
                 <li>
-                  سفاری (Safari) براؤزر میں نیچے موجود <strong>Share</strong> بٹن (تیر کا نشان <Share2 className="w-3.5 h-3.5 inline text-blue-400" />) دبائیں۔
+                  In Safari browser, tap the <strong>Share</strong> button (box with upward arrow <Share2 className="w-3.5 h-3.5 inline text-blue-400" />).
                 </li>
                 <li>
-                  تھوڑا نیچے اسکرول کر کے <strong>"Add to Home Screen" (ہوم اسکرین پر شامل کریں)</strong> پر ٹیپ کریں۔
+                  Scroll down and tap <strong>"Add to Home Screen"</strong>.
                 </li>
                 <li>
-                  اوپر دائیں کونے میں <strong>"Add"</strong> پر کلک کریں۔ ایپ آپ کی اسکرین پر آ جائے گی!
+                  Tap <strong>"Add"</strong> in the top right corner.
                 </li>
               </ol>
             </div>
@@ -193,7 +192,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
           <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-2xl flex items-start gap-2.5 text-xs text-amber-200/90">
             <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <p className="leading-relaxed">
-              <strong>فائدہ:</strong> انسٹال کرنے کے بعد یہ بالکل اصلی اینڈرائیڈ/آئی فون ایپ کی طرح فل اسکرین کھلے گی، بغیر کسی براؤزر بار کے، اور بہت تیزی سے چلے گی۔
+              <strong>Advantage:</strong> The installed app runs fullscreen without browser address bars, loads instantly, and delivers loud audio chime notifications for new orders.
             </p>
           </div>
         </div>
@@ -205,7 +204,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
             onClick={onClose}
             className="px-5 py-2 bg-stone-800 hover:bg-stone-700 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
           >
-            بند کریں (Close)
+            Close
           </button>
         </div>
       </div>

@@ -1,0 +1,466 @@
+  // Render Cashier POS Interface (Menu + Billing + Thermal Print + Header)
+  const renderPosContent = () => {
+    const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
+    const pendingOnlineOrders = orders.filter(
+      (o) => o.orderSource === 'online_website' && o.orderStatus === 'pending'
+    );
+    const latestPendingOrder = pendingOnlineOrders[0] || null;
+    
+    return (
+      <div id="pos-terminal-container" className="flex flex-col flex-1 min-h-0 bg-stone-950">
+        {/* Iframe Bluetooth Blocking Warning Banner (High Prominence) */}
+        {isInIframe && (
+          <div className="bg-sky-600 text-white px-3 sm:px-4 py-2.5 flex items-center justify-between gap-3 shadow-xl relative z-50 animate-pulse border-b border-white/20">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-white text-sky-600 flex items-center justify-center shrink-0 shadow-md">
+                <Zap className="w-5 h-5 fill-sky-600" />
+              </div>
+              <div className="text-xs sm:text-sm font-black leading-tight">
+                <div className="flex items-center gap-1.5">
+                  <span>بلوٹوتھ پرنٹر کو صحیح کرنے کے لیے یہاں کلک کریں</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+                <p className="text-[10px] text-sky-100 font-bold mt-0.5 opacity-90">Bluetooth is blocked in this window. Open full app to connect.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const url = window.location.href;
+                window.open(url, '_blank');
+              }}
+              className="px-4 py-1.5 bg-white hover:bg-sky-50 text-sky-600 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-lg active:scale-95 transition-all whitespace-nowrap"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>FIX BLUETOOTH</span>
+            </button>
+          </div>
+        )}
+
+        {/* Google Maps Quota Warning Banner */}
+        {hasMapQuotaExceeded && (
+          <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
+            <span>
+              Google Maps Platform quota reached. If you are the app owner, visit{' '}
+              <a
+                href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold text-amber-950 hover:text-amber-800"
+              >
+                maps developer site
+              </a>{' '}
+              for instructions to update your account.
+            </span>
+          </div>
+        )}
+
+        {/* Continuous Ringing Emergency Banner */}
+        {isBellRinging && (
+          <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white px-4 py-2.5 flex items-center justify-between shadow-2xl sticky top-0 z-40 border-b-2 border-white animate-pulse">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-yellow-300"></span>
+              </span>
+              <Bell className="w-5 h-5 text-yellow-300 animate-bounce shrink-0" />
+              <div className="text-xs sm:text-sm font-black flex items-center gap-2 flex-wrap">
+                <span>🚨 Alarm Active: "Attention {shopSettings.cashierName || 'Muzammil'}, please lift order!"</span>
+                {incomingOrder && (
+                  <span className="bg-black/40 px-2 py-0.5 rounded text-amber-300 text-xs font-mono">
+                    #{incomingOrder.tokenNumber}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleAcceptAndStopBell}
+                className="px-4 py-1.5 bg-white hover:bg-stone-100 text-red-600 font-black rounded-xl text-xs sm:text-sm shadow-xl flex items-center gap-1.5 cursor-pointer ring-2 ring-red-400 active:scale-95 transition-all"
+              >
+                <BellOff className="w-4 h-4 text-red-600" />
+                <span>🔔 Accept Order & Silence Alarm</span>
+              </button>
+              <button
+                onClick={() => {
+                  posSound.stopContinuousOrderBell();
+                  setIsBellRinging(false);
+                }}
+                className="px-2.5 py-1.5 bg-black/40 hover:bg-black/60 text-red-100 border border-white/40 rounded-xl text-xs font-bold cursor-pointer"
+              >
+                🛑 Silence Sound
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Persistent Unlifted Order Bar */}
+        {latestPendingOrder && !incomingOrder && (
+          <div className="bg-red-600 text-white px-4 py-3 flex items-center justify-between shadow-2xl z-40 border-b-2 border-amber-300 animate-pulse">
+            <div className="flex items-center gap-2.5 truncate">
+              <div className="w-9 h-9 rounded-full bg-white text-red-600 flex items-center justify-center font-black animate-bounce shrink-0 shadow-md">
+                <Bell className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div className="truncate">
+                <div className="text-xs font-black uppercase tracking-wider text-amber-200">
+                  🚨 Alarm Ringing! New online order waiting
+                </div>
+                <div className="text-sm font-black truncate">
+                  Token #{latestPendingOrder.tokenNumber} • {latestPendingOrder.customerName}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIncomingOrder(latestPendingOrder);
+                  posSound.startContinuousOrderBell(
+                    0,
+                    shopSettings.cashierName || 'Muzammil',
+                    shopSettings.voiceAlertEnabled !== false
+                  );
+                }}
+                className="px-3.5 py-2 bg-stone-950 hover:bg-stone-900 text-amber-300 rounded-xl text-xs font-black shadow-md border border-amber-400 cursor-pointer"
+              >
+                View
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAcceptAndPrintIncoming(latestPendingOrder)}
+                className="px-4 py-2 bg-emerald-400 hover:bg-emerald-300 text-stone-950 rounded-xl text-xs sm:text-sm font-black shadow-lg ring-2 ring-white flex items-center gap-1.5 cursor-pointer"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>ACCEPT</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 1-Click Print Target Area (Hidden on screen, shown in print) */}
+        {activePrintOrder && (
+          <ThermalReceipt
+            order={activePrintOrder}
+            shop={shopSettings}
+            qrCodeDataUrl={upiQrDataUrl}
+            isPrintOnly={true}
+            printMode={activePrintMode}
+          />
+        )}
+        {activeSummaryKotOrders && activeSummaryKotOrders.length > 0 && !activePrintOrder && (
+          <SummaryKotReceipt
+            summaryData={aggregateOrdersForSummaryKot(activeSummaryKotOrders)}
+            shop={shopSettings}
+            isPrintOnly={true}
+          />
+        )}
+
+        {/* Header */}
+        <Header
+          shop={shopSettings}
+          orders={orders}
+          currentUser={currentUser}
+          onOpenGoogleAuth={() => setIsAuthModalOpen(true)}
+          isBellRinging={isBellRinging}
+          onAcceptAndStopBell={handleAcceptAndStopBell}
+          onRingBell={handleRingBell}
+          onOpenEditShop={() => setIsEditShopOpen(true)}
+          onOpenHistory={() => setIsHistoryOpen(true)}
+          onOpenKhata={() => setIsKhataOpen(true)}
+          onOpenPrinterSetup={() => setIsPrinterSetupOpen(true)}
+          onOpenPosSettings={() => setIsPosSettingsOpen(true)}
+          onOpenShareLink={() => setIsShareLinkOpen(true)}
+          onOpenGmail={() => setIsGmailOpen(true)}
+          onOpenGoogleMaps={() => setIsGoogleMapsOpen(true)}
+          soundEnabled={shopSettings.soundEnabled}
+          onToggleSound={() =>
+            setShopSettings((prev) => ({
+              ...prev,
+              soundEnabled: !prev.soundEnabled,
+            }))
+          }
+          onSwitchToCustomerSite={() => handleSwitchViewMode('customer_site')}
+          pendingOnlineCount={pendingOnlineOrders.length}
+        />
+
+        {/* Print Success Toast */}
+        {printAlertMessage && (
+          <div className="fixed top-20 right-4 z-50 bg-amber-500 text-stone-950 px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-2.5 animate-bounce text-sm font-black border border-amber-300">
+            <CheckCircle className="w-5 h-5 text-stone-950" />
+            <span>{printAlertMessage}</span>
+          </div>
+        )}
+
+        {/* Mobile App View Switcher */}
+        <div className="lg:hidden bg-stone-950 border-b border-stone-800 p-2.5 relative z-20 shadow-lg">
+          <div className="grid grid-cols-2 gap-2 bg-stone-900/90 p-1.5 rounded-2xl border border-stone-800">
+            <button
+              type="button"
+              onClick={() => setMobileTab('menu')}
+              className={`py-3 px-3 text-xs sm:text-sm font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                mobileTab === 'menu'
+                  ? 'bg-amber-500 text-stone-950 shadow-md ring-2 ring-amber-300'
+                  : 'text-stone-300 hover:text-white bg-stone-950/60'
+              }`}
+            >
+              <Utensils className="w-4 h-4" />
+              <span>1. Menu ({menuItems.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab('bill')}
+              className={`py-3 px-3 text-xs sm:text-sm font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                mobileTab === 'bill'
+                  ? 'bg-amber-500 text-stone-950 shadow-md ring-2 ring-amber-300'
+                  : 'text-stone-300 hover:text-white bg-stone-950/60'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>2. Bill ({currentOrderItems.length})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 pb-28 lg:pb-6 overflow-hidden">
+          <section
+            className={`lg:col-span-7 h-full min-h-0 ${
+              mobileTab === 'menu' ? 'block' : 'hidden lg:block'
+            }`}
+          >
+            <MenuSection
+              menuItems={menuItems}
+              currentOrderItems={currentOrderItems}
+              shop={shopSettings}
+              onAddItem={handleAddItem}
+              onDecreaseItem={handleDecreaseItem}
+              onCancelItem={handleCancelItem}
+              onClearBill={handleClearBill}
+              onOpenAddItemModal={() => setIsAddItemOpen(true)}
+              onEditPrice={handleEditMenuItemPrice}
+              onAddCustomItem={handleAddCustomOrderItem}
+              soundEnabled={shopSettings.soundEnabled}
+            />
+          </section>
+
+          <section
+            className={`lg:col-span-5 h-full min-h-0 ${
+              mobileTab === 'bill' ? 'block' : 'hidden lg:block'
+            }`}
+          >
+            <ActiveBillPanel
+              items={currentOrderItems}
+              shop={shopSettings}
+              tokenNumber={tokenNumber}
+              onUpdateQuantity={handleUpdateQuantity}
+              onUpdateUnitPrice={handleUpdateUnitPrice}
+              onAddCustomItem={handleAddCustomOrderItem}
+              onRemoveItem={handleRemoveItem}
+              onClearBill={handleClearBill}
+              onPrintBill={handlePrintBill}
+              onOpenPreview={handleOpenPreview}
+              soundEnabled={shopSettings.soundEnabled}
+              upiQrDataUrl={upiQrDataUrl}
+              onOpenPrinterSetup={() => setIsPrinterSetupOpen(true)}
+              onOpenPosSettings={() => setIsPosSettingsOpen(true)}
+              onUpdateShop={setShopSettings}
+            />
+          </section>
+        </main>
+
+        {/* Mobile Floating Order Pill */}
+        {mobileTab === 'menu' && currentOrderItems.length > 0 && (
+          <div
+            className="lg:hidden fixed bottom-3 inset-x-3 p-3.5 bg-amber-500 text-stone-950 rounded-2xl shadow-2xl border-2 border-white z-40 flex items-center justify-between cursor-pointer"
+            onClick={() => setMobileTab('bill')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-stone-950 text-amber-300 flex items-center justify-center font-black">
+                {currentOrderItems.reduce((acc, it) => acc + it.quantity, 0)}
+              </div>
+              <div>
+                <div className="text-[11px] font-black uppercase text-stone-900">
+                  {currentOrderItems.length} Dishes • Token #{tokenNumber}
+                </div>
+                <div className="text-xl font-black">{shopSettings.currencySymbol} {currentSubtotal}</div>
+              </div>
+            </div>
+            <ArrowRight className="w-6 h-6" />
+          </div>
+        )}
+
+        {/* Modals inside renderPosContent for context */}
+        <EditShopModal
+          isOpen={isEditShopOpen}
+          onClose={() => setIsEditShopOpen(false)}
+          settings={shopSettings}
+          onSave={setShopSettings}
+        />
+        <AddItemModal
+          isOpen={isAddItemOpen}
+          onClose={() => setIsAddItemOpen(false)}
+          onAddItem={handleAddNewItem}
+        />
+        <BillHistoryModal
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          orders={orders}
+          shop={shopSettings}
+          onReprintOrder={handleReprintOrder}
+          onOpenPreview={handleOpenPreview}
+          onDeleteOrder={handleDeleteOrder}
+          onClearAllOrders={handleClearAllOrders}
+          onPrintSummaryKot={handlePrintSummaryKot}
+        />
+        <ReceiptPreviewModal
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          order={previewOrder}
+          shop={shopSettings}
+          qrCodeDataUrl={upiQrDataUrl}
+          onPrint={(mode) => {
+            if (previewOrder) {
+              handleReprintOrder(previewOrder, mode || 'both');
+              setIsPreviewOpen(false);
+            }
+          }}
+        />
+        <InstallAppModal
+          isOpen={isInstallModalOpen}
+          onClose={() => setIsInstallModalOpen(false)}
+          shopName={shopSettings.shopNameUr || shopSettings.shopNameEn}
+        />
+        <PrinterSetupModal
+          isOpen={isPrinterSetupOpen}
+          onClose={() => setIsPrinterSetupOpen(false)}
+          shop={shopSettings}
+          onUpdateShop={setShopSettings}
+          onTestPrint={() => {
+            if (orders.length > 0) handleReprintOrder(orders[0]);
+            else window.print();
+          }}
+        />
+        <MonthlyKhataModal
+          isOpen={isKhataOpen}
+          onClose={() => setIsKhataOpen(false)}
+          orders={orders}
+          shop={shopSettings}
+          khataEntries={khataEntries}
+          onAddKhataEntry={(entry) => setKhataEntries((prev) => [entry, ...prev])}
+          onDeleteKhataEntry={(id) => setKhataEntries((prev) => prev.filter((k) => k.id !== id))}
+          onUpdateKhataEntry={(updated) =>
+            setKhataEntries((prev) => prev.map((k) => (k.id === updated.id ? updated : k)))
+          }
+        />
+        <GmailModal
+          isOpen={isGmailOpen}
+          onClose={() => setIsGmailOpen(false)}
+          shop={shopSettings}
+          orders={orders}
+          khataEntries={khataEntries}
+        />
+        <GoogleDeliveryMapModal
+          isOpen={isGoogleMapsOpen}
+          onClose={() => setIsGoogleMapsOpen(false)}
+          shop={shopSettings}
+          orders={orders}
+          selectedOrder={orders.find((o) => o.orderType === 'delivery') || null}
+        />
+        <Biryani3DModal
+          isOpen={is3DBiryaniModalOpen}
+          onClose={() => setIs3DBiryaniModalOpen(false)}
+          shopName={shopSettings.shopNameEn}
+        />
+        <PosDeviceSettingsModal
+          isOpen={isPosSettingsOpen}
+          onClose={() => setIsPosSettingsOpen(false)}
+          shop={shopSettings}
+          onOpenPrinterSetup={() => setIsPrinterSetupOpen(true)}
+          onSave={(updated) => {
+            setShopSettings(updated);
+            localStorage.setItem('zcb_biryani_shop_v3', JSON.stringify(updated));
+          }}
+          onTestPrint={async () => {
+            const testOrder = orders[0];
+            if (testOrder) {
+              setActivePrintOrder(testOrder);
+              const targetMode = shopSettings.autoPrintTarget || 'both';
+              setActivePrintMode(targetMode);
+              await printDirectOrSystem(testOrder, shopSettings, targetMode);
+            }
+          }}
+        />
+        <GoogleAuthGateModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          currentUser={currentUser}
+          onLoginSuccess={handleLoginSuccess}
+          onLogout={handleLogout}
+          isMandatory={false}
+        />
+        <LiveBillDispenserModal
+          isOpen={!!dispenserOrder}
+          order={dispenserOrder}
+          shop={shopSettings}
+          qrCodeDataUrl={upiQrDataUrl}
+          onClose={() => setDispenserOrder(null)}
+          onUpdateShop={setShopSettings}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-stone-950 flex flex-col font-sans antialiased text-stone-200">
+      {/* 👑 SHOP OWNER MASTER BAR */}
+      {isUserOwner && (
+        <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-4 py-1.5 flex items-center justify-between border-b border-amber-500/50 z-40 shadow-xl">
+          <div className="flex items-center gap-2">
+            <div className="bg-amber-400 text-stone-950 px-2 py-0.5 rounded-full font-black text-[11px] flex items-center gap-1">
+              <Crown className="w-3.5 h-3.5" />
+              <span>OWNER</span>
+            </div>
+            <span className="font-mono text-amber-200 font-bold text-xs">{currentUser?.email}</span>
+          </div>
+          <div className="flex gap-1">
+            <button onClick={() => handleSwitchViewMode('both')} className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${viewMode === 'both' ? 'bg-amber-400 text-stone-950' : 'text-stone-300'}`}>Dual</button>
+            <button onClick={() => handleSwitchViewMode('pos')} className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${viewMode === 'pos' ? 'bg-amber-400 text-stone-950' : 'text-stone-300'}`}>POS</button>
+            <button onClick={() => handleSwitchViewMode('customer_site')} className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${viewMode === 'customer_site' ? 'bg-amber-400 text-stone-950' : 'text-stone-300'}`}>Web</button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col min-h-0">
+        {viewMode === 'pos' ? (
+          renderPosContent()
+        ) : viewMode === 'customer_site' ? (
+          <CustomerOrderingSite
+            shop={shopSettings}
+            menuItems={menuItems}
+            onPlaceOrder={handleIncomingOnlineOrder}
+            onSwitchToPOS={() => handleSwitchViewMode('pos')}
+            isOwner={isUserOwner}
+            currentUser={currentUser}
+            onOpenLogin={() => setIsAuthModalOpen(true)}
+          />
+        ) : (
+          <div className="flex flex-col lg:flex-row h-screen">
+            <div className="flex-1 overflow-auto border-r-4 border-amber-500/20 bg-stone-950">
+              {renderPosContent()}
+            </div>
+            <div className="w-full lg:w-[420px] bg-stone-900 shadow-2xl relative z-10">
+              <CustomerOrderingSite
+                shop={shopSettings}
+                menuItems={menuItems}
+                onPlaceOrder={handleIncomingOnlineOrder}
+                onSwitchToPOS={() => handleSwitchViewMode('pos')}
+                isOwner={true}
+                currentUser={currentUser}
+                onOpenLogin={() => setIsAuthModalOpen(true)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

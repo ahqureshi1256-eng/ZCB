@@ -26,21 +26,34 @@
     print-color-adjust: exact !important;
   }
 
-  /* Hide entire web app interface */
-  #main-app-container,
+  /* Hide entire web app UI elements when printing */
+  #main-app-content,
+  #owner-master-control-bar,
+  #header-top-banner-container,
   nav,
   header,
   aside,
   button,
+  footer,
   .no-print {
     display: none !important;
+  }
+
+  /* Ensure root and app container allow print area to show */
+  #root,
+  #main-app-container {
+    background: transparent !important;
+    display: block !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   /* Expose strictly the print area */
   #receipt-print-area {
     display: block !important;
     visibility: visible !important;
-    position: static !important;
+    position: relative !important;
     margin: 0 auto !important;
     padding: 2mm 3mm !important;
     background: #ffffff !important;

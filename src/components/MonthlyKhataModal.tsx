@@ -147,8 +147,8 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
     const newEntry: KhataEntry = {
       id: `khata-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       type: newType,
-      supplierOrPartyName: newParty.trim() || (newType === 'chicken' ? 'مرغی سپلائر' : newType === 'rice' ? 'چاول و اناج مارکیٹ' : 'پارٹی'),
-      description: newDesc.trim() || `${newType.toUpperCase()} کی خریداری`,
+      supplierOrPartyName: newParty.trim() || (newType === 'chicken' ? 'Chicken Supplier' : newType === 'rice' ? 'Rice Supplier' : 'Party'),
+      description: newDesc.trim() || `${newType.toUpperCase()} Purchase`,
       amount: amt,
       paidAmount: paid,
       balanceDue: balance,
@@ -193,14 +193,14 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/40">
-                  RESTAURANT KHATA & UDHAAR BOOK
+                  RESTAURANT KHATA & LEDGER BOOK
                 </span>
                 <span className="text-xs text-stone-400 font-mono">
                   {selectedMonth}
                 </span>
               </div>
               <h2 className="text-lg sm:text-2xl font-black tracking-tight text-white mt-0.5">
-                ماہانہ سیلز، ڈبے اور ادھار کھاتہ (Monthly Ledger)
+                Monthly Sales, Boxes & Ledger (Khata)
               </h2>
             </div>
           </div>
@@ -229,13 +229,13 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
           {/* Total Monthly Sales */}
           <div className="bg-stone-900/90 p-3 rounded-2xl border border-emerald-500/30">
             <span className="text-[10px] font-bold text-emerald-400 block uppercase">
-              1. مہینے کی کل سیل (Sales)
+              1. Monthly Sales
             </span>
             <span className="text-base sm:text-xl font-black text-white block mt-0.5">
               {formatPrice(monthSales, shop.currencySymbol)}
             </span>
             <span className="text-[11px] text-stone-400">
-              {monthBillsCount} کل بل جاری ہوئے
+              {monthBillsCount} Bills Generated
             </span>
           </div>
 
@@ -243,13 +243,13 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
           <div className="bg-stone-900/90 p-3 rounded-2xl border border-amber-500/30">
             <span className="text-[10px] font-bold text-amber-400 block uppercase flex items-center gap-1">
               <Package className="w-3.5 h-3.5" />
-              <span>2. کل ڈبے / پلیٹس (Boxes)</span>
+              <span>2. Total Boxes Sold</span>
             </span>
             <span className="text-base sm:text-xl font-black text-amber-300 block mt-0.5">
-              {totalDabbeCount} ڈبے
+              {totalDabbeCount} Boxes
             </span>
             <span className="text-[11px] text-stone-400">
-              بریانی و دیگر آئٹمز کی فروخت
+              Biryani & Menu Portions
             </span>
           </div>
 
@@ -257,13 +257,13 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
           <div className="bg-stone-900/90 p-3 rounded-2xl border border-rose-500/30">
             <span className="text-[10px] font-bold text-rose-400 block uppercase flex items-center gap-1">
               <AlertCircle className="w-3.5 h-3.5" />
-              <span>3. کل ادھار واجب الادا (Udhaar)</span>
+              <span>3. Total Pending Balance</span>
             </span>
             <span className="text-base sm:text-xl font-black text-rose-300 block mt-0.5">
               {formatPrice(totalPendingUdhaar, shop.currencySymbol)}
             </span>
             <span className="text-[11px] text-stone-400">
-              مرغی، چاول و دیگر باقیات
+              Chicken, Rice & Suppliers
             </span>
           </div>
 
@@ -271,13 +271,13 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
           <div className="bg-stone-900/90 p-3 rounded-2xl border border-cyan-500/30">
             <span className="text-[10px] font-bold text-cyan-400 block uppercase flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
-              <span>4. خالص نفع / بقایا (Net)</span>
+              <span>4. Net Estimated Margin</span>
             </span>
             <span className={`text-base sm:text-xl font-black block mt-0.5 ${netEstimatedMargin >= 0 ? 'text-emerald-300' : 'text-rose-400'}`}>
               {formatPrice(netEstimatedMargin, shop.currencySymbol)}
             </span>
             <span className="text-[11px] text-stone-400">
-              کل اخراجات: {formatPrice(totalExpenses, shop.currencySymbol)}
+              Total Expenses: {formatPrice(totalExpenses, shop.currencySymbol)}
             </span>
           </div>
         </div>
@@ -294,7 +294,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
               }`}
             >
               <PieChart className="w-3.5 h-3.5" />
-              <span>مرغی و چاول ادھار سمری</span>
+              <span>Supplier Khata Summary</span>
             </button>
 
             <button
@@ -306,7 +306,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>مکمل کھاتہ اندراج ({monthKhata.length})</span>
+              <span>Ledger Entries ({monthKhata.length})</span>
             </button>
 
             <button
@@ -318,7 +318,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              <span>روزانہ کا ریکارڈ (Daily Ledger)</span>
+              <span>Daily Breakdown</span>
             </button>
           </div>
 
@@ -327,7 +327,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
             className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-xs font-black flex items-center gap-1 shadow-md transition-transform active:scale-95 cursor-pointer mb-2"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ نیا کھاتہ / ادھار لکھیں</span>
+            <span>+ Add Ledger Entry</span>
           </button>
         </div>
 
@@ -341,24 +341,24 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                 <div className="bg-stone-950 p-4 rounded-2xl border border-stone-800 space-y-3">
                   <div className="flex items-center justify-between border-b border-stone-800 pb-2">
                     <span className="font-bold text-amber-400 text-sm flex items-center gap-1.5">
-                      🍗 <span>مرغی کا کھاتہ (Chicken Khata)</span>
+                      🍗 <span>Chicken Ledger</span>
                     </span>
                     <span className="text-xs bg-stone-900 px-2 py-0.5 rounded text-stone-400">
-                      {chickenKhata.length} اندراج
+                      {chickenKhata.length} entries
                     </span>
                   </div>
 
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between text-stone-300">
-                      <span>کل خریدی:</span>
+                      <span>Total Purchase:</span>
                       <span className="font-bold text-white">{formatPrice(chickenTotal, shop.currencySymbol)}</span>
                     </div>
                     <div className="flex justify-between text-stone-300">
-                      <span>ادائیگی کر دی:</span>
+                      <span>Amount Paid:</span>
                       <span className="font-bold text-emerald-400">{formatPrice(chickenTotal - chickenUdhaar, shop.currencySymbol)}</span>
                     </div>
                     <div className="flex justify-between text-stone-300 border-t border-stone-800 pt-1.5">
-                      <span className="font-bold text-rose-400">باقی ادھار (Udhaar Due):</span>
+                      <span className="font-bold text-rose-400">Balance Due:</span>
                       <span className="font-black text-rose-300 text-sm">{formatPrice(chickenUdhaar, shop.currencySymbol)}</span>
                     </div>
                   </div>
@@ -370,7 +370,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                     }}
                     className="w-full py-1.5 bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs rounded-xl font-bold cursor-pointer transition-colors"
                   >
-                    مرغی کے بل اور ادھار دیکھیں →
+                    View Chicken Ledger →
                   </button>
                 </div>
 
@@ -378,24 +378,24 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                 <div className="bg-stone-950 p-4 rounded-2xl border border-stone-800 space-y-3">
                   <div className="flex items-center justify-between border-b border-stone-800 pb-2">
                     <span className="font-bold text-amber-400 text-sm flex items-center gap-1.5">
-                      🍚 <span>چاول کا کھاتہ (Rice Khata)</span>
+                      🍚 <span>Rice Ledger</span>
                     </span>
                     <span className="text-xs bg-stone-900 px-2 py-0.5 rounded text-stone-400">
-                      {riceKhata.length} اندراج
+                      {riceKhata.length} entries
                     </span>
                   </div>
 
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between text-stone-300">
-                      <span>کل خریدی:</span>
+                      <span>Total Purchase:</span>
                       <span className="font-bold text-white">{formatPrice(riceTotal, shop.currencySymbol)}</span>
                     </div>
                     <div className="flex justify-between text-stone-300">
-                      <span>ادائیگی کر دی:</span>
+                      <span>Amount Paid:</span>
                       <span className="font-bold text-emerald-400">{formatPrice(riceTotal - riceUdhaar, shop.currencySymbol)}</span>
                     </div>
                     <div className="flex justify-between text-stone-300 border-t border-stone-800 pt-1.5">
-                      <span className="font-bold text-rose-400">باقی ادھار (Udhaar Due):</span>
+                      <span className="font-bold text-rose-400">Balance Due:</span>
                       <span className="font-black text-rose-300 text-sm">{formatPrice(riceUdhaar, shop.currencySymbol)}</span>
                     </div>
                   </div>
@@ -407,7 +407,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                     }}
                     className="w-full py-1.5 bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs rounded-xl font-bold cursor-pointer transition-colors"
                   >
-                    چاول کا کھاتہ دیکھیں →
+                    View Rice Ledger →
                   </button>
                 </div>
 
@@ -415,24 +415,24 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                 <div className="bg-stone-950 p-4 rounded-2xl border border-stone-800 space-y-3">
                   <div className="flex items-center justify-between border-b border-stone-800 pb-2">
                     <span className="font-bold text-amber-400 text-sm flex items-center gap-1.5">
-                      🌶️ <span>مصالحہ، آئل و ڈبے پیکنگ</span>
+                      🌶️ <span>Spices, Oil & Packaging</span>
                     </span>
                     <span className="text-xs bg-stone-900 px-2 py-0.5 rounded text-stone-400">
-                      {masalaKhata.length} اندراج
+                      {masalaKhata.length} entries
                     </span>
                   </div>
 
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between text-stone-300">
-                      <span>کل خریدی:</span>
+                      <span>Total Purchase:</span>
                       <span className="font-bold text-white">{formatPrice(masalaTotal, shop.currencySymbol)}</span>
                     </div>
                     <div className="flex justify-between text-stone-300">
-                      <span>ادائیگی کر دی:</span>
+                      <span>Amount Paid:</span>
                       <span className="font-bold text-emerald-400">{formatPrice(masalaTotal - masalaUdhaar, shop.currencySymbol)}</span>
                     </div>
                     <div className="flex justify-between text-stone-300 border-t border-stone-800 pt-1.5">
-                      <span className="font-bold text-rose-400">باقی ادھار (Udhaar Due):</span>
+                      <span className="font-bold text-rose-400">Balance Due:</span>
                       <span className="font-black text-rose-300 text-sm">{formatPrice(masalaUdhaar, shop.currencySymbol)}</span>
                     </div>
                   </div>
@@ -444,7 +444,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                     }}
                     className="w-full py-1.5 bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs rounded-xl font-bold cursor-pointer transition-colors"
                   >
-                    تفصیل دیکھیں →
+                    View Details →
                   </button>
                 </div>
               </div>
@@ -456,10 +456,10 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                     <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
                     <div>
                       <span className="text-xs font-black text-rose-300 block">
-                        گاہکوں کی طرف بقایا ادھار: {formatPrice(customerUdhaarTotal, shop.currencySymbol)}
+                        Customer Pending Dues: {formatPrice(customerUdhaarTotal, shop.currencySymbol)}
                       </span>
                       <span className="text-[11px] text-stone-400">
-                        جن گاہکوں نے کھانا لے کر پیسے بعد میں دینے کا کہا ہے
+                        Customers with credit balance
                       </span>
                     </div>
                   </div>
@@ -470,7 +470,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                     }}
                     className="px-3 py-1 bg-rose-500 hover:bg-rose-400 text-stone-950 text-xs font-bold rounded-lg cursor-pointer transition-colors"
                   >
-                    گاہک ادھار دیکھیں
+                    View Customer Dues
                   </button>
                 </div>
               )}
@@ -495,17 +495,17 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                         }`}
                       >
                         {type === 'all'
-                          ? 'سب کھاتے'
+                          ? 'All Ledgers'
                           : type === 'chicken'
-                          ? '🍗 مرغی'
+                          ? '🍗 Chicken'
                           : type === 'rice'
-                          ? '🍚 چاول'
+                          ? '🍚 Rice'
                           : type === 'masala'
-                          ? '🌶️ مصالحہ'
+                          ? '🌶️ Spices'
                           : type === 'packaging'
-                          ? '📦 ڈبے پیکنگ'
+                          ? '📦 Packaging'
                           : type === 'customer_udhaar'
-                          ? '👤 گاہک ادھار'
+                          ? '👤 Customer Dues'
                           : type}
                       </button>
                     )
@@ -516,7 +516,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                   <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
                   <input
                     type="text"
-                    placeholder="سپلائر یا پارٹی تلاش کریں..."
+                    placeholder="Search supplier or party..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-stone-950 border border-stone-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-stone-500 outline-hidden"
@@ -527,12 +527,12 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
               {/* Entries List */}
               {filteredKhata.length === 0 ? (
                 <div className="text-center py-12 bg-stone-950/50 rounded-2xl border border-stone-800">
-                  <p className="text-sm text-stone-400">کوئی کھاتہ یا ادھار کا اندراج نہیں ملا۔</p>
+                  <p className="text-sm text-stone-400">No ledger or credit entries found.</p>
                   <button
                     onClick={() => setIsAddingEntry(true)}
                     className="mt-3 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs rounded-xl cursor-pointer"
                   >
-                    + نیا اندراج شامل کریں
+                    + Add New Entry
                   </button>
                 </div>
               ) : (
@@ -546,14 +546,14 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-black text-amber-300">
                             {k.type === 'chicken'
-                              ? '🍗 مرغی'
+                              ? '🍗 Chicken'
                               : k.type === 'rice'
-                              ? '🍚 چاول'
+                              ? '🍚 Rice'
                               : k.type === 'masala'
-                              ? '🌶️ مصالحہ'
+                              ? '🌶️ Spices'
                               : k.type === 'customer_udhaar'
-                              ? '👤 گاہک ادھار'
-                              : '📄 کھاتہ'}
+                              ? '👤 Customer Due'
+                              : '📄 Ledger'}
                           </span>
                           <span className="font-bold text-white text-sm">
                             {k.supplierOrPartyName}
@@ -563,21 +563,21 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                           </span>
                         </div>
                         <p className="text-xs text-stone-400">{k.description}</p>
-                        {k.notes && <p className="text-[11px] text-stone-500 italic">نوٹ: {k.notes}</p>}
+                        {k.notes && <p className="text-[11px] text-stone-500 italic">Note: {k.notes}</p>}
                       </div>
 
                       <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-stone-800 pt-2 sm:pt-0">
                         <div className="text-right">
                           <div className="text-xs text-stone-400">
-                            کل رقم: <strong className="text-white">{formatPrice(k.amount, shop.currencySymbol)}</strong>
+                            Total: <strong className="text-white">{formatPrice(k.amount, shop.currencySymbol)}</strong>
                           </div>
                           {k.balanceDue > 0 ? (
                             <span className="text-xs font-black text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded-md border border-rose-600/40">
-                              باقی ادھار: {formatPrice(k.balanceDue, shop.currencySymbol)}
+                              Balance Due: {formatPrice(k.balanceDue, shop.currencySymbol)}
                             </span>
                           ) : (
                             <span className="text-xs font-black text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-600/40">
-                              ✓ مکمل ادا شدہ (Paid)
+                              ✓ Paid
                             </span>
                           )}
                         </div>
@@ -594,15 +594,15 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                                 });
                               }}
                               className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black text-xs rounded-xl cursor-pointer"
-                              title="ادھار کلیئر کریں (Mark as Fully Paid)"
+                              title="Mark as Fully Paid"
                             >
-                              ادھار ختم
+                              Mark Paid
                             </button>
                           )}
                           <button
                             onClick={() => onDeleteKhataEntry(k.id)}
                             className="p-1.5 text-stone-500 hover:text-rose-400 rounded-lg hover:bg-stone-800 transition-colors cursor-pointer"
-                            title="ڈیلیٹ کریں"
+                            title="Delete entry"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -619,12 +619,12 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
           {activeTab === 'daily' && (
             <div className="space-y-3">
               <div className="bg-stone-950 p-3 rounded-2xl border border-stone-800 text-xs text-stone-400">
-                مہینے کے ہر دن کی سیلز، کل فروخت شدہ ڈبے، اور خرچے کی روزانہ تفصیل:
+                Daily sales, total portions/boxes sold, and expenses for each day of the month:
               </div>
 
               {dailyList.length === 0 ? (
                 <div className="text-center py-10 text-stone-400 text-xs">
-                  اس مہینے کا کوئی ریکارڈ موجود نہیں ہے۔
+                  No records available for this month.
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -638,19 +638,19 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                           📅 {day.dateStr}
                         </span>
                         <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5">
-                          <span>{day.bills} بل</span>
+                          <span>{day.bills} bills</span>
                           <span>•</span>
-                          <span className="text-amber-200 font-bold">📦 {day.dabbe} ڈبے فروخت</span>
+                          <span className="text-amber-200 font-bold">📦 {day.dabbe} boxes sold</span>
                         </div>
                       </div>
 
                       <div className="text-right space-y-0.5">
                         <div className="text-sm font-black text-emerald-400">
-                          سیل: {formatPrice(day.sales, shop.currencySymbol)}
+                          Sales: {formatPrice(day.sales, shop.currencySymbol)}
                         </div>
                         {day.udhaar > 0 && (
                           <div className="text-xs font-bold text-rose-400">
-                            ادھار: {formatPrice(day.udhaar, shop.currencySymbol)}
+                            Due: {formatPrice(day.udhaar, shop.currencySymbol)}
                           </div>
                         )}
                       </div>
@@ -665,13 +665,13 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
         {/* Modal Footer */}
         <div className="p-4 bg-stone-950 border-t border-stone-800 flex items-center justify-between">
           <div className="text-xs text-stone-400">
-            نوٹ: تمام کھاتہ ڈیٹا آپ کے براؤزر اور موبائل میں ہمیشہ محفوظ رہتا ہے۔
+            Note: All ledger data is saved locally on your device.
           </div>
           <button
             onClick={onClose}
             className="px-5 py-2 bg-stone-800 hover:bg-stone-700 text-white font-bold text-xs rounded-xl cursor-pointer"
           >
-            بند کریں (Close)
+            Close
           </button>
         </div>
       </div>
@@ -686,7 +686,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
             <div className="flex items-center justify-between border-b border-stone-800 pb-2">
               <h3 className="font-black text-amber-300 text-base flex items-center gap-1.5">
                 <PlusCircle className="w-5 h-5 text-amber-400" />
-                <span>نیا کھاتہ یا ادھار کا اندراج</span>
+                <span>Add Ledger or Credit Entry</span>
               </h3>
               <button
                 type="button"
@@ -699,31 +699,31 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-stone-300 font-bold mb-1">کھاتہ کی قسم (Category)</label>
+                <label className="block text-stone-300 font-bold mb-1">Category</label>
                 <select
                   value={newType}
                   onChange={(e) => setNewType(e.target.value as KhataType)}
                   className="w-full bg-stone-950 border border-stone-700 rounded-xl p-2.5 text-white outline-hidden"
                 >
-                  <option value="chicken">🍗 مرغی کا کھاتہ (Chicken Supply)</option>
-                  <option value="rice">🍚 چاول کا کھاتہ (Rice & Grains)</option>
-                  <option value="masala">🌶️ مصالحہ جات و آئل (Spices & Oil)</option>
-                  <option value="packaging">📦 ڈبے، شاپر و پیکنگ (Packaging Boxes)</option>
-                  <option value="gas_fuel">🔥 گیس سلنڈر و ایندھن (Gas / Fuel)</option>
-                  <option value="customer_udhaar">👤 گاہک کا ادھار (Customer Udhaar)</option>
-                  <option value="labour">👨‍🍳 کاریگر / ملازم کی تنخواہ (Labour)</option>
-                  <option value="other">📄 دیگر متفرق اخراجات (Other)</option>
+                  <option value="chicken">🍗 Chicken Supply</option>
+                  <option value="rice">🍚 Rice & Grains</option>
+                  <option value="masala">🌶️ Spices & Oil</option>
+                  <option value="packaging">📦 Boxes & Packaging</option>
+                  <option value="gas_fuel">🔥 Gas Cylinder & Fuel</option>
+                  <option value="customer_udhaar">👤 Customer Credit Due</option>
+                  <option value="labour">👨‍🍳 Staff Salary / Labour</option>
+                  <option value="other">📄 Other Expense</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-stone-300 font-bold mb-1">
-                  {newType === 'customer_udhaar' ? 'گاہک کا نام و فون نمبر' : 'سپلائر / دکاندار کا نام'}
+                  {newType === 'customer_udhaar' ? 'Customer Name & Phone' : 'Supplier / Vendor Name'}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder={newType === 'chicken' ? 'مثال: حنیف پولٹری فارم' : 'نام درج کریں'}
+                  placeholder={newType === 'chicken' ? 'e.g. Hanif Poultry Farm' : 'Enter name'}
                   value={newParty}
                   onChange={(e) => setNewParty(e.target.value)}
                   className="w-full bg-stone-950 border border-stone-700 rounded-xl p-2.5 text-white outline-hidden"
@@ -731,10 +731,10 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-stone-300 font-bold mb-1">تفصیل (مثال: 50 کلو مرغی یا 2 بوری چاول)</label>
+                <label className="block text-stone-300 font-bold mb-1">Description (e.g. 50 kg Chicken or 2 Bags Rice)</label>
                 <input
                   type="text"
-                  placeholder="سامان کی تفصیل..."
+                  placeholder="Item details..."
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
                   className="w-full bg-stone-950 border border-stone-700 rounded-xl p-2.5 text-white outline-hidden"
@@ -743,7 +743,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-stone-300 font-bold mb-1">کل بل کی رقم ({shop.currencySymbol})</label>
+                  <label className="block text-stone-300 font-bold mb-1">Total Bill Amount ({shop.currencySymbol})</label>
                   <input
                     type="number"
                     required
@@ -754,7 +754,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-emerald-400 font-bold mb-1">نقد ادا کیے ({shop.currencySymbol})</label>
+                  <label className="block text-emerald-400 font-bold mb-1">Paid Cash ({shop.currencySymbol})</label>
                   <input
                     type="number"
                     placeholder="0"
@@ -767,7 +767,7 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
 
               {/* Live Remaining Balance Calculation */}
               <div className="p-2.5 bg-stone-950 rounded-xl border border-stone-800 flex justify-between items-center text-xs">
-                <span className="text-stone-400">باقی رہ جانے والا ادھار:</span>
+                <span className="text-stone-400">Remaining Balance Due:</span>
                 <span className="font-black text-rose-400 text-sm">
                   {formatPrice(
                     Math.max(0, (parseFloat(newAmount) || 0) - (parseFloat(newPaid) || 0)),
@@ -777,10 +777,10 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-stone-300 font-bold mb-1">اضافی نوٹ (اختیاری)</label>
+                <label className="block text-stone-300 font-bold mb-1">Additional Note (Optional)</label>
                 <input
                   type="text"
-                  placeholder="کوئی خاص بات یا تاریخ..."
+                  placeholder="Any notes..."
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
                   className="w-full bg-stone-950 border border-stone-700 rounded-xl p-2.5 text-white outline-hidden"
@@ -794,13 +794,13 @@ export const MonthlyKhataModal: React.FC<MonthlyKhataModalProps> = ({
                 onClick={() => setIsAddingEntry(false)}
                 className="flex-1 py-2.5 bg-stone-800 text-stone-300 rounded-xl font-bold cursor-pointer text-xs"
               >
-                منسوخ
+                Cancel
               </button>
               <button
                 type="submit"
                 className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl font-black cursor-pointer text-xs shadow-md"
               >
-                محفوظ کریں (Save)
+                Save Entry
               </button>
             </div>
           </form>

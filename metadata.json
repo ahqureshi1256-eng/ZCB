@@ -1,7 +1,9 @@
 {
   "name": "Remix ZCB - Zaiqa Chicken Biryani",
   "description": "Official ZCB Zaiqa Chicken Biryani Fast POS Billing \u0026 1-Click Thermal Receipt System.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "geolocation"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

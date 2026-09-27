@@ -1,22 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OrderItem, Order, ShopSettings } from '../types';
 import { formatPrice } from '../utils/billing';
 import { posSound } from '../utils/audio';
 import {
   Printer,
+  Bluetooth,
   Trash2,
   Plus,
   Minus,
   Receipt,
-  Share2,
   Banknote,
-  CreditCard,
-  User,
-  Phone,
-  RotateCcw,
   Smartphone,
-  Zap,
+  PlusCircle,
+  Settings,
+  Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
+import {
+  getActiveBluetoothSession,
+  addBluetoothStatusListener,
+  tryAutoConnectBluetoothPrinter,
+  heartbeatBluetooth,
+} from '../utils/printerService';
 
 interface ActiveBillPanelProps {
   items: OrderItem[];
@@ -25,10 +30,17 @@ interface ActiveBillPanelProps {
   onUpdateQuantity: (index: number, newQty: number) => void;
   onRemoveItem: (index: number) => void;
   onClearBill: () => void;
-  onPrintBill: (orderData: Partial<Order>) => void;
-  onOpenPreview: (orderData: Partial<Order>) => void;
+  onPrintBill: (orderData: Partial<Order>, mode?: 'both' | 'bill' | 'kot', options?: { skipPreview?: boolean }) => void;
+  onOpenMenu?: () => void;
   soundEnabled: boolean;
+  onOpenPrinterSetup?: () => void;
+  onUpdateShop?: (newShop: ShopSettings) => void;
+  // Optional backwards-compatibility props
+  onUpdateUnitPrice?: (index: number, newUnitPrice: number) => void;
+  onAddCustomItem?: (name: string, price: number, portion?: string) => void;
+  onOpenPreview?: (orderData: Partial<Order>) => void;
   upiQrDataUrl?: string;
+  onOpenPosSettings?: () => void;
 }
 
 export const ActiveBillPanel: React.FC<ActiveBillPanelProps> = ({
@@ -39,282 +51,204 @@ export const ActiveBillPanel: React.FC<ActiveBillPanelProps> = ({
   onRemoveItem,
   onClearBill,
   onPrintBill,
-  onOpenPreview,
+  onOpenMenu,
   soundEnabled,
-  upiQrDataUrl,
+  onOpenPrinterSetup,
 }) => {
-  const [orderType, setOrderType] = useState<'takeaway' | 'dine_in' | 'delivery'>('takeaway');
-  const [tableNumber, setTableNumber] = useState<string>('');
-  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
-  const [deliveryLandmark, setDeliveryLandmark] = useState<string>('');
-  const [deliveryFee, setDeliveryFee] = useState<number>(50);
-  const [riderName, setRiderName] = useState<string>('ZCB Bike Rider #1');
   const [paymentMode, setPaymentMode] = useState<'cash' | 'online' | 'card'>('cash');
-  const [customerName, setCustomerName] = useState<string>('');
-  const [customerPhone, setCustomerPhone] = useState<string>('');
-  const [cashTendered, setCashTendered] = useState<number | ''>('');
-  const [discountAmount, setDiscountAmount] = useState<number>(0);
-  const [showCustomerFields, setShowCustomerFields] = useState<boolean>(false);
+  const [orderType, setOrderType] = useState<'takeaway' | 'dine_in' | 'delivery'>('takeaway');
+
+  // Real-time Bluetooth Session Tracking
+  const [btSession, setBtSession] = useState(getActiveBluetoothSession());
+
+  useEffect(() => {
+    const unsub = addBluetoothStatusListener((session) => {
+      setBtSession(session);
+    });
+
+    // Auto-connect attempt on mount
+    tryAutoConnectBluetoothPrinter(shop.bluetoothDeviceName).catch(() => {});
+
+    // Gentle heartbeat when active
+    const heartbeatInterval = setInterval(() => {
+      const current = getActiveBluetoothSession();
+      if (current?.device?.gatt?.connected) {
+        heartbeatBluetooth().catch(() => {});
+      } else {
+        tryAutoConnectBluetoothPrinter(shop.bluetoothDeviceName).catch(() => {});
+      }
+    }, 10000);
+
+    return () => {
+      unsub();
+      clearInterval(heartbeatInterval);
+    };
+  }, [shop.bluetoothDeviceName]);
 
   const subtotal = items.reduce((sum, it) => sum + it.total, 0);
-  const activeDeliveryFee = orderType === 'delivery' ? deliveryFee : 0;
-  const totalAmount = Math.max(0, subtotal + activeDeliveryFee - discountAmount);
+  const totalAmount = subtotal;
 
-  const tenderVal = typeof cashTendered === 'number' ? cashTendered : 0;
-  const changeDue = tenderVal > totalAmount ? tenderVal - totalAmount : 0;
-
+  // Build finalized order object
   const currentOrderData: Partial<Order> = {
-    tokenNumber,
     orderType,
-    tableNumber: orderType === 'dine_in' ? tableNumber : undefined,
-    deliveryAddress: orderType === 'delivery' ? deliveryAddress.trim() : undefined,
-    deliveryLandmark: orderType === 'delivery' ? deliveryLandmark.trim() : undefined,
-    deliveryFee: orderType === 'delivery' ? deliveryFee : undefined,
-    riderName: orderType === 'delivery' ? riderName.trim() : undefined,
-    customerName: customerName.trim() || undefined,
-    customerPhone: customerPhone.trim() || undefined,
-    items,
+    items: [...items],
     subtotal,
-    discountAmount,
+    discountAmount: 0,
     totalAmount,
     paymentMode,
-    cashTendered: paymentMode === 'cash' && tenderVal > 0 ? tenderVal : undefined,
-    changeDue: paymentMode === 'cash' && tenderVal > 0 ? changeDue : undefined,
   };
 
-  const handlePrintClick = () => {
+  // 1-Click Print & Finalize Master Action
+  const handlePrintAndFinalize = () => {
     if (items.length === 0) return;
     if (soundEnabled) {
       posSound.playPrintBill();
     }
-    onPrintBill(currentOrderData);
+    onPrintBill(currentOrderData, 'both', { skipPreview: true });
   };
 
-  const handleQuickCash = (amt: number) => {
+  const handleOpenMenuClick = () => {
     if (soundEnabled) posSound.playClick();
-    setCashTendered(amt);
-  };
-
-  const handleShareWhatsApp = () => {
-    if (items.length === 0) return;
-    const itemList = items
-      .map(
-        (i) =>
-          `• ${i.nameEn} ${i.portionLabelEn || i.portionLabelUr ? `(${i.portionLabelEn || i.portionLabelUr})` : ''} x ${i.quantity} = ${shop.currencySymbol} ${i.total}`
-      )
-      .join('\n');
-
-    const msg = `*${shop.shortName || 'ZCB'} - ${shop.shopNameEn}*\n${shop.taglineEn}\n${shop.address}\n\n*Token #:* #${tokenNumber}\n*Order Type:* ${
-      orderType === 'takeaway' ? 'Takeaway (Parcel)' : 'Dine-In'
-    }\n------------------------\n${itemList}\n------------------------\n*Total Amount:* ${shop.currencySymbol} ${totalAmount}\n*Payment Mode:* ${
-      paymentMode === 'cash' ? 'Cash' : paymentMode === 'online' ? 'Online' : 'Card'
-    }\n\n${shop.footerNoteEn}`;
-
-    const cleanPhone = customerPhone ? customerPhone.replace(/[^0-9]/g, '') : '';
-    const url = `https://api.whatsapp.com/send?${
-      cleanPhone ? `phone=${cleanPhone}&` : ''
-    }text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
+    if (onOpenMenu) {
+      onOpenMenu();
+    }
   };
 
   return (
-    <div className="flex flex-col h-full bg-stone-900 rounded-2xl border border-stone-800 shadow-xl overflow-hidden">
-      {/* Header with Token */}
-      <div className="p-3.5 sm:p-4 bg-stone-950 text-white flex items-center justify-between border-b border-amber-500/30">
-        <div>
-          <span className="text-[10px] uppercase tracking-wider text-amber-400 font-bold">
-            ACTIVE BILL
-          </span>
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-xl font-black tracking-tight text-amber-100">
-              Token #{tokenNumber}
+    <div className="flex flex-col h-auto lg:h-full bg-stone-900 rounded-3xl border-2 border-stone-800 shadow-2xl overflow-visible lg:overflow-hidden">
+      {/* 1. HEADER: Token ID, Bluetooth Status Trigger & Clear Action */}
+      <div className="p-3.5 sm:p-4 bg-stone-950 text-white flex items-center justify-between border-b border-amber-500/30 gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="px-3 py-1 bg-amber-500 text-stone-950 font-mono font-black text-sm sm:text-base rounded-xl shadow-md shrink-0">
+            #{tokenNumber}
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base sm:text-lg font-black tracking-tight text-white truncate">
+              Active Bill ({items.length})
             </h2>
-            <span className="text-xs text-stone-400 font-sans">
-              ({items.length} {items.length === 1 ? 'Item' : 'Items'})
-            </span>
           </div>
         </div>
 
-        {/* Order Type Toggle: Takeaway vs Dine-In vs Bike Delivery */}
-        <div className="flex bg-stone-900 p-1 rounded-xl border border-stone-700 shadow-inner gap-1">
-          <button
-            onClick={() => setOrderType('takeaway')}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              orderType === 'takeaway'
-                ? 'bg-amber-500 text-stone-950 shadow-xs'
-                : 'text-stone-300 hover:text-white'
-            }`}
-          >
-            🛍️ Takeaway
-          </button>
-          <button
-            onClick={() => setOrderType('dine_in')}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              orderType === 'dine_in'
-                ? 'bg-amber-500 text-stone-950 shadow-xs'
-                : 'text-stone-300 hover:text-white'
-            }`}
-          >
-            🍽️ Dine-In
-          </button>
-          <button
-            onClick={() => {
-              setOrderType('delivery');
-              setShowCustomerFields(true);
-            }}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-              orderType === 'delivery'
-                ? 'bg-emerald-500 text-stone-950 shadow-xs ring-1 ring-emerald-300'
-                : 'text-stone-300 hover:text-white'
-            }`}
-          >
-            <span>🛵 Bike Delivery</span>
-          </button>
+        {/* Right Header Actions: Bluetooth Settings & Clear Cart */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Bluetooth Settings Pill Button - Opens full Bluetooth settings modal */}
+          {onOpenPrinterSetup && (
+            <button
+              type="button"
+              onClick={onOpenPrinterSetup}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer border active:scale-95 shadow-sm ${
+                btSession && btSession.characteristic
+                  ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 ring-1 ring-emerald-500/30'
+                  : 'bg-stone-800 hover:bg-stone-700 text-amber-300 border-amber-500/40'
+              }`}
+              title="بلوٹوتھ پرنٹر سیٹنگز کھولیں (Open Bluetooth Settings)"
+            >
+              <Bluetooth className={`w-3.5 h-3.5 ${btSession && btSession.characteristic ? 'text-emerald-400' : 'text-amber-400'}`} />
+              <span className="truncate max-w-[110px] sm:max-w-none">
+                {btSession && btSession.characteristic ? `✓ ${btSession.deviceName || 'Printer'}` : 'بلوٹوتھ جوڑیں'}
+              </span>
+            </button>
+          )}
+
+          {/* Cancel/Clear Bill */}
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (soundEnabled) posSound.playClick();
+                if (window.confirm('Are you sure you want to clear all items from this bill?')) {
+                  onClearBill();
+                }
+              }}
+              className="p-2 text-stone-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-xl transition-colors cursor-pointer border border-stone-800"
+              title="Clear all items from bill"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
-      {orderType === 'dine_in' && (
-        <div className="px-4 py-2 bg-stone-950/90 border-b border-stone-800 flex items-center gap-2 text-xs">
-          <span className="font-bold text-amber-400">Table Number:</span>
-          <input
-            type="text"
-            placeholder="e.g. Table 4 / Hall"
-            value={tableNumber}
-            onChange={(e) => setTableNumber(e.target.value)}
-            className="px-2.5 py-1 bg-stone-900 border border-stone-700 text-white rounded text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 w-40"
-          />
-        </div>
-      )}
-
-      {orderType === 'delivery' && (
-        <div className="px-4 py-2.5 bg-emerald-950/40 border-b border-emerald-500/30 text-xs space-y-2">
-          <div className="flex items-center justify-between text-emerald-300 font-bold">
-            <span className="flex items-center gap-1.5">
-              <span className="text-base">🛵</span>
-              <span>BIKE HOME DELIVERY DETAILS</span>
-            </span>
-            <span className="text-[11px] bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/40">
-              Delivery Fee: {shop.currencySymbol} {deliveryFee}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] text-stone-400 block mb-0.5">Delivery Address *</label>
-              <input
-                type="text"
-                required
-                placeholder="House #, Street #, Colony/Sector"
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-                className="w-full px-2.5 py-1.5 bg-stone-900 border border-emerald-500/40 text-white rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-stone-400 block mb-0.5">Landmark (قریبی نشانی)</label>
-              <input
-                type="text"
-                placeholder="Near Mosque / Main Market"
-                value={deliveryLandmark}
-                onChange={(e) => setDeliveryLandmark(e.target.value)}
-                className="w-full px-2.5 py-1.5 bg-stone-900 border border-stone-700 text-white rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] text-stone-400 block mb-0.5">Assigned Bike Rider</label>
-              <input
-                type="text"
-                placeholder="e.g. Rider Ali / Bike 1"
-                value={riderName}
-                onChange={(e) => setRiderName(e.target.value)}
-                className="w-full px-2.5 py-1.5 bg-stone-900 border border-stone-700 text-white rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-stone-400 block mb-0.5">Delivery Fee (Rs.)</label>
-              <input
-                type="number"
-                placeholder="50"
-                value={deliveryFee}
-                onChange={(e) => setDeliveryFee(Number(e.target.value))}
-                className="w-full px-2.5 py-1.5 bg-stone-900 border border-stone-700 text-white rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400 font-bold text-amber-300"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cart Items List */}
-      <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-2">
+      {/* 2. MAIN BILL AREA: ITEM LIST */}
+      <div className="flex-1 overflow-y-visible lg:overflow-y-auto p-3 sm:p-4 space-y-2.5 bg-stone-950/40">
         {items.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-stone-500">
-            <Receipt className="w-12 h-12 text-stone-600 mb-3 animate-pulse" />
-            <p className="font-bold text-stone-300 text-base">Cart is Empty</p>
-            <p className="text-xs text-stone-500 mt-1 max-w-xs">
-              Click Chicken Biryani (250g, 500g, 1 KG), Sada Biryani, or Cold Drinks to add items to this bill.
-            </p>
+          <div className="h-56 flex flex-col items-center justify-center text-center p-6 text-stone-500 space-y-3">
+            <div className="w-14 h-14 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-stone-600 shadow-inner">
+              <Receipt className="w-7 h-7" />
+            </div>
+            <div>
+              <p className="font-black text-stone-300 text-sm sm:text-base">بل میں کوئی چیز شامل نہیں ہے</p>
+              <p className="text-xs text-stone-500 mt-1">
+                کھانے منتخب کرنے کے لیے نیچے دیئے گئے "Add Items" بٹن پر کلک کریں۔
+              </p>
+            </div>
           </div>
         ) : (
           <div className="space-y-2">
             {items.map((item, index) => (
               <div
                 key={`${item.id}-${index}`}
-                className="p-2.5 rounded-xl border border-stone-800 bg-stone-950/70 hover:bg-stone-950 transition-colors flex items-center justify-between gap-2"
+                className="p-3 rounded-2xl border-2 border-stone-800 bg-stone-900/90 flex items-center justify-between gap-3 shadow-md transition-all hover:border-stone-700"
               >
+                {/* Item Details */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-amber-100 text-sm truncate">
+                  <div className="font-black text-white text-sm sm:text-base leading-tight truncate">
                     {item.nameEn || item.nameUr}
                   </div>
-                  <div className="text-xs text-stone-400 font-sans flex items-center gap-1.5 mt-0.5">
-                    {(item.portionLabelEn || item.portionLabelUr) && (
-                      <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-bold text-[10px] border border-amber-500/30">
-                        {item.portionLabelEn || item.portionLabelUr}
+                  <div className="flex items-center gap-2 mt-1">
+                    {(item.portionLabelEn || item.portionLabelUr || item.portionLabel) && (
+                      <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-md font-black text-[11px] border border-amber-500/30">
+                        {item.portionLabelEn || item.portionLabelUr || item.portionLabel}
                       </span>
                     )}
-                    <span className="text-[11px] text-stone-500">
-                      @{formatPrice(item.unitPrice, shop.currencySymbol)} each
+                    <span className="font-mono text-stone-400 font-bold text-xs">
+                      @{formatPrice(item.unitPrice, shop.currencySymbol)}
                     </span>
                   </div>
                 </div>
 
-                {/* Quantity Controls */}
-                <div className="flex items-center gap-1.5 bg-stone-900 border border-stone-700 rounded-lg p-0.5 shadow-2xs">
+                {/* Quantity Stepper [-] [Count] [+] */}
+                <div className="flex items-center gap-1 bg-stone-950 border border-stone-700 rounded-xl p-1 shrink-0">
                   <button
+                    type="button"
                     onClick={() => {
                       if (soundEnabled) posSound.playClick();
                       onUpdateQuantity(index, item.quantity - 1);
                     }}
-                    className="w-6 h-6 rounded flex items-center justify-center text-stone-300 hover:bg-stone-800 hover:text-white active:scale-90 transition-all cursor-pointer"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-stone-800 hover:bg-stone-700 text-amber-300 cursor-pointer font-black active:scale-95 transition-all"
                   >
-                    <Minus className="w-3 h-3" />
+                    <Minus className="w-3.5 h-3.5 stroke-[3]" />
                   </button>
-                  <span className="w-6 text-center font-bold text-xs text-amber-200">
+                  <div className="min-w-[30px] text-center font-mono font-black text-sm text-amber-400">
                     {item.quantity}
-                  </span>
+                  </div>
                   <button
+                    type="button"
                     onClick={() => {
                       if (soundEnabled) posSound.playClick();
                       onUpdateQuantity(index, item.quantity + 1);
                     }}
-                    className="w-6 h-6 rounded flex items-center justify-center text-stone-300 hover:bg-stone-800 hover:text-white active:scale-90 transition-all cursor-pointer"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-stone-950 cursor-pointer font-black active:scale-95 transition-all shadow-sm"
                   >
-                    <Plus className="w-3 h-3" />
+                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
                   </button>
                 </div>
 
-                {/* Line Total & Remove */}
-                <div className="text-right min-w-[65px]">
-                  <div className="font-bold text-amber-300 text-sm">
+                {/* Line Total & Remove Button */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="font-black text-amber-300 text-sm sm:text-base font-mono text-right min-w-[55px]">
                     {formatPrice(item.total, shop.currencySymbol)}
                   </div>
                   <button
-                    onClick={() => onRemoveItem(index)}
-                    className="text-stone-500 hover:text-rose-400 text-[10px] inline-flex items-center gap-0.5 mt-0.5 transition-colors cursor-pointer"
-                    title="Remove item"
+                    type="button"
+                    onClick={() => {
+                      if (soundEnabled) posSound.playClick();
+                      onRemoveItem(index);
+                    }}
+                    className="text-stone-500 hover:text-rose-400 p-1.5 rounded-lg transition-colors cursor-pointer"
+                    title="Remove Item"
                   >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Remove</span>
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -323,222 +257,81 @@ export const ActiveBillPanel: React.FC<ActiveBillPanelProps> = ({
         )}
       </div>
 
-      {/* Bill Footer & Checkout Actions */}
-      <div className="border-t border-stone-800 bg-stone-950 p-3.5 sm:p-4 space-y-3 shrink-0">
-        {/* Optional Customer Toggle */}
-        <div className="flex items-center justify-between text-xs">
+      {/* 3. TOTAL SUMMARY & PROMINENT CALL-TO-ACTION BUTTONS */}
+      <div className="p-3.5 sm:p-5 bg-stone-950 border-t-2 border-stone-800 space-y-4">
+        {/* Total Summary Row */}
+        <div className="flex justify-between items-center bg-stone-900/90 border border-stone-800 p-3.5 rounded-2xl shadow-inner">
+          <div className="space-y-0.5">
+            <span className="text-xs sm:text-sm font-black text-stone-300 uppercase tracking-wider block">
+              TOTAL AMOUNT (کل رقم):
+            </span>
+            <div className="flex items-center gap-2">
+              {/* Compact Payment Toggle */}
+              <button
+                type="button"
+                onClick={() => setPaymentMode('cash')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1 transition-all cursor-pointer ${
+                  paymentMode === 'cash'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-stone-400 hover:text-white bg-stone-950'
+                }`}
+              >
+                <Banknote className="w-3 h-3" />
+                <span>Cash</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMode('online')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-black flex items-center gap-1 transition-all cursor-pointer ${
+                  paymentMode === 'online'
+                    ? 'bg-sky-600 text-white shadow-xs'
+                    : 'text-stone-400 hover:text-white bg-stone-950'
+                }`}
+              >
+                <Smartphone className="w-3 h-3" />
+                <span>Online</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="text-3xl sm:text-4xl font-black text-amber-400 font-mono tracking-tight text-right">
+            {formatPrice(totalAmount, shop.currencySymbol)}
+          </div>
+        </div>
+
+        {/* 4. TWO PROMINENT CALL-TO-ACTION BUTTONS: 'Add Items' & 'Print Bill/Finalize' */}
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
+          {/* BUTTON 1: Add Items (To Open Menu / Add Dishes) */}
           <button
-            onClick={() => setShowCustomerFields(!showCustomerFields)}
-            className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+            type="button"
+            onClick={handleOpenMenuClick}
+            className="sm:col-span-5 py-4 px-4 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2.5 bg-stone-900 hover:bg-stone-800 text-amber-300 border-2 border-amber-500/50 hover:border-amber-400 shadow-lg cursor-pointer transition-all active:scale-95"
+            title="Open menu to select more dishes"
           >
-            <User className="w-3.5 h-3.5" />
-            <span>{showCustomerFields ? 'Hide Customer Details' : '+ Customer Details (Optional)'}</span>
+            <PlusCircle className="w-5 h-5 text-amber-400 stroke-[2.5]" />
+            <span>+ Add Items (مینو)</span>
           </button>
 
-          {items.length > 0 && (
-            <button
-              onClick={onClearBill}
-              className="text-stone-500 hover:text-rose-400 flex items-center gap-1 font-medium transition-colors cursor-pointer"
-              title="Clear all items from bill"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Clear Bill</span>
-            </button>
-          )}
-        </div>
-
-        {showCustomerFields && (
-          <div className="grid grid-cols-2 gap-2 p-2.5 bg-stone-900 border border-stone-800 rounded-xl">
-            <div className="relative">
-              <User className="w-3.5 h-3.5 text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Customer Name"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full pl-7 pr-2 py-1.5 text-xs bg-stone-950 border border-stone-700 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500"
-              />
-            </div>
-            <div className="relative">
-              <Phone className="w-3.5 h-3.5 text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="tel"
-                placeholder="Mobile # (e.g. 0333-7018183)"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                className="w-full pl-7 pr-2 py-1.5 text-xs bg-stone-950 border border-stone-700 text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Payment Method Selector */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-stone-400 uppercase tracking-wide flex justify-between">
-            <span>PAYMENT METHOD:</span>
-            <span className="text-amber-400">Cash / Online / Card</span>
-          </label>
-          <div className="grid grid-cols-3 gap-1.5">
-            <button
-              onClick={() => setPaymentMode('cash')}
-              className={`py-2 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
-                paymentMode === 'cash'
-                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
-                  : 'bg-stone-900 text-stone-300 border-stone-800 hover:bg-stone-800'
-              }`}
-            >
-              <Banknote className="w-4 h-4" />
-              <span>Cash</span>
-            </button>
-            <button
-              onClick={() => setPaymentMode('online')}
-              className={`py-2 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
-                paymentMode === 'online'
-                  ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
-                  : 'bg-stone-900 text-stone-300 border-stone-800 hover:bg-stone-800'
-              }`}
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>Online</span>
-            </button>
-            <button
-              onClick={() => setPaymentMode('card')}
-              className={`py-2 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
-                paymentMode === 'card'
-                  ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
-                  : 'bg-stone-900 text-stone-300 border-stone-800 hover:bg-stone-800'
-              }`}
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Card</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Cash Tendered & Quick Currency Calculator */}
-        {paymentMode === 'cash' && items.length > 0 && (
-          <div className="p-2.5 bg-stone-900 border border-emerald-500/30 rounded-xl space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-emerald-300">Cash Received:</span>
-              <div className="flex items-center gap-1">
-                <span className="text-stone-400">{shop.currencySymbol}</span>
-                <input
-                  type="number"
-                  placeholder="Amount"
-                  value={cashTendered}
-                  onChange={(e) =>
-                    setCashTendered(e.target.value === '' ? '' : Number(e.target.value))
-                  }
-                  className="w-28 px-2 py-1 bg-stone-950 border border-emerald-500/50 text-white rounded-lg text-xs font-bold text-right focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                />
-              </div>
-            </div>
-
-            {/* Quick Amount Buttons */}
-            <div className="flex gap-1.5 justify-between">
-              <button
-                onClick={() => handleQuickCash(totalAmount)}
-                className="flex-1 py-1 bg-stone-950 hover:bg-emerald-950 text-emerald-300 text-[10px] font-bold rounded border border-emerald-500/40 cursor-pointer shadow-2xs"
-              >
-                Exact
-              </button>
-              <button
-                onClick={() => handleQuickCash(200)}
-                className="flex-1 py-1 bg-stone-950 hover:bg-stone-800 text-stone-200 text-[10px] font-bold rounded border border-stone-700 cursor-pointer shadow-2xs"
-              >
-                200
-              </button>
-              <button
-                onClick={() => handleQuickCash(500)}
-                className="flex-1 py-1 bg-stone-950 hover:bg-stone-800 text-stone-200 text-[10px] font-bold rounded border border-stone-700 cursor-pointer shadow-2xs"
-              >
-                500
-              </button>
-              <button
-                onClick={() => handleQuickCash(1000)}
-                className="flex-1 py-1 bg-stone-950 hover:bg-stone-800 text-stone-200 text-[10px] font-bold rounded border border-stone-700 cursor-pointer shadow-2xs"
-              >
-                1000
-              </button>
-              <button
-                onClick={() => handleQuickCash(5000)}
-                className="flex-1 py-1 bg-stone-950 hover:bg-stone-800 text-stone-200 text-[10px] font-bold rounded border border-stone-700 cursor-pointer shadow-2xs"
-              >
-                5000
-              </button>
-            </div>
-
-            {tenderVal > 0 && (
-              <div className="flex justify-between items-center pt-1 border-t border-stone-800 text-xs">
-                <span className="font-bold text-emerald-400">Change Due:</span>
-                <span
-                  className={`font-black text-sm ${
-                    changeDue > 0 ? 'text-emerald-300' : 'text-stone-400'
-                  }`}
-                >
-                  {formatPrice(changeDue, shop.currencySymbol)}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Totals Breakdown */}
-        <div className="pt-2 border-t border-stone-800 space-y-1">
-          <div className="flex justify-between text-xs text-stone-400">
-            <span>Subtotal:</span>
-            <span>{formatPrice(subtotal, shop.currencySymbol)}</span>
-          </div>
-
-          <div className="flex justify-between items-center pt-1">
-            <span className="text-sm font-black text-stone-200">
-              TOTAL AMOUNT:
-            </span>
-            <span className="text-2xl font-black text-amber-400 tracking-tight">
-              {formatPrice(totalAmount, shop.currencySymbol)}
-            </span>
-          </div>
-        </div>
-
-        {/* 1-CLICK THERMAL PRINTER PRINT BUTTON */}
-        <div className="space-y-2 pt-1">
+          {/* BUTTON 2: Consolidated 'Print Bill / Finalize' */}
           <button
-            onClick={handlePrintClick}
+            type="button"
+            id="quick-print-floating-btn"
+            onClick={handlePrintAndFinalize}
             disabled={items.length === 0}
-            className={`w-full py-4 px-4 rounded-xl font-black text-base sm:text-lg flex items-center justify-center gap-2.5 shadow-xl transition-all active:scale-[0.98] ${
+            className={`sm:col-span-7 py-4 px-5 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-3 shadow-2xl transition-all active:scale-[0.98] ${
               items.length > 0
-                ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 hover:from-amber-400 hover:to-amber-500 text-stone-950 shadow-amber-500/20 cursor-pointer ring-2 ring-amber-400'
+                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-stone-950 shadow-amber-500/30 cursor-pointer ring-2 ring-amber-300'
                 : 'bg-stone-800 text-stone-600 cursor-not-allowed shadow-none border border-stone-700'
             }`}
+            title="Print Full Bill & Finalize Order"
           >
             <Printer className="w-6 h-6 stroke-[2.5]" />
-            <span className="tracking-wide uppercase">
-              1-CLICK PRINT BILL
+            <span className="tracking-wide uppercase font-black">
+              PRINT BILL (بل نکالیں)
             </span>
           </button>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => onOpenPreview(currentOrderData)}
-              disabled={items.length === 0}
-              className="flex-1 py-2 px-2 bg-stone-900 hover:bg-stone-800 text-stone-200 border border-stone-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-            >
-              <Receipt className="w-3.5 h-3.5 text-amber-400" />
-              <span>Preview Receipt</span>
-            </button>
-
-            <button
-              onClick={handleShareWhatsApp}
-              disabled={items.length === 0}
-              className="flex-1 py-2 px-2 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border border-emerald-700/50 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-            >
-              <Share2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>WhatsApp Bill</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
   );
 };
-

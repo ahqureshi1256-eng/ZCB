@@ -1,0 +1,36 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Customer food order from website or POS",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "billNumber": { "type": "string" },
+        "tokenNumber": { "type": "number" },
+        "dateStr": { "type": "string" },
+        "timeStr": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "orderType": { "type": "string", "enum": ["takeaway", "dine_in", "delivery"] },
+        "deliveryAddress": { "type": "string" },
+        "deliveryLandmark": { "type": "string" },
+        "deliveryFee": { "type": "number" },
+        "riderName": { "type": "string" },
+        "orderSource": { "type": "string" },
+        "orderStatus": { "type": "string", "enum": ["pending", "accepted", "preparing", "on_bike", "delivered", "cancelled"] },
+        "subtotal": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paymentMode": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "tokenNumber", "totalAmount", "orderStatus", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of food orders synced between website customers and POS device"
+    }
+  }
+}

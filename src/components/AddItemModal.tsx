@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MenuItem, MenuItemPortion } from '../types';
-import { X, Plus, Trash2, CheckCircle2, Utensils } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, Utensils, Package, AlertTriangle } from 'lucide-react';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -18,18 +18,42 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   const [isVeg, setIsVeg] = useState(false);
   const [priceType, setPriceType] = useState<'single' | 'portions'>('portions');
   const [singlePrice, setSinglePrice] = useState<number>(180);
+  const [trackInventory, setTrackInventory] = useState<boolean>(true);
+  const [stockQuantity, setStockQuantity] = useState<number>(20);
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(5);
 
   const [portions, setPortions] = useState<MenuItemPortion[]>([
-    { id: 'p1', labelUr: '250g (1 Pao)', labelEn: '250g (1 Pao)', price: 160 },
-    { id: 'p2', labelUr: '500g (Half Kg)', labelEn: '500g (Half Kg)', price: 320 },
-    { id: 'p3', labelUr: '1000g (1 KG)', labelEn: '1000g (1 KG)', price: 640 },
+    { id: 'p1', labelUr: '250g (1 Pao)', labelEn: '250g (1 Pao)', price: 160, trackInventory: true, stockQuantity: 20, lowStockThreshold: 5 },
+    { id: 'p2', labelUr: '500g (Half Kg)', labelEn: '500g (Half Kg)', price: 320, trackInventory: true, stockQuantity: 20, lowStockThreshold: 5 },
+    { id: 'p3', labelUr: '1000g (1 KG)', labelEn: '1000g (1 KG)', price: 640, trackInventory: true, stockQuantity: 20, lowStockThreshold: 5 },
   ]);
+
+  // Clean available food categories
+  const availableCategories = [
+    { id: 'biryani', label: '🍗 Biryani' },
+    { id: 'kababs', label: '🍢 Shami Kababs' },
+    { id: 'sides', label: '🥣 Raita & Salad' },
+    { id: 'drinks', label: '🥤 Chilled Drinks' },
+    { id: 'dessert', label: '🍮 Kheer & Dessert' },
+    { id: 'other', label: '🍽️ Other' },
+  ];
 
   if (!isOpen) return null;
 
   const handleAddPortion = () => {
     const newId = `p-${Date.now()}`;
-    setPortions([...portions, { id: newId, labelUr: 'Portion', labelEn: 'Portion', price: 100 }]);
+    setPortions([
+      ...portions,
+      {
+        id: newId,
+        labelUr: 'Portion',
+        labelEn: 'Portion',
+        price: 100,
+        trackInventory,
+        stockQuantity,
+        lowStockThreshold,
+      },
+    ]);
   };
 
   const handleUpdatePortion = (index: number, field: keyof MenuItemPortion, val: any) => {
@@ -53,9 +77,19 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       nameHi: nameEn.trim(),
       category,
       isVeg,
+      trackInventory,
+      stockQuantity: Number(stockQuantity),
+      lowStockThreshold: Number(lowStockThreshold),
       ...(priceType === 'single'
         ? { defaultPrice: Number(singlePrice) }
-        : { portions }),
+        : {
+            portions: portions.map((p) => ({
+              ...p,
+              trackInventory,
+              stockQuantity: p.stockQuantity ?? Number(stockQuantity),
+              lowStockThreshold: p.lowStockThreshold ?? Number(lowStockThreshold),
+            })),
+          }),
     };
 
     onAddItem(newItem);
@@ -105,12 +139,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 onChange={(e) => setCategory(e.target.value as any)}
                 className="w-full px-3 py-2 text-xs font-semibold bg-stone-950 border border-stone-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
-                <option value="biryani">🍗 Biryani</option>
-                <option value="drinks">🥤 Cold Drinks</option>
-                <option value="kababs">🍢 Kababs & Tikka</option>
-                <option value="sides">🥣 Raita & Salad</option>
-                <option value="dessert">🍮 Kheer & Dessert</option>
-                <option value="other">🍽️ Other</option>
+                {availableCategories.map((cat: any) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.label}
+                  </option>
+                ))}
+                {!availableCategories.some((c: any) => c.id === 'other') && (
+                  <option value="other">🍽️ Other</option>
+                )}
               </select>
             </div>
 
@@ -249,6 +285,61 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                   <Plus className="w-3.5 h-3.5" />
                   <span>+ Add Another Portion</span>
                 </button>
+              </div>
+            )}
+          </div>
+
+          {/* Inventory & Stock Tracking */}
+          <div className="p-3.5 bg-stone-950 rounded-xl border border-stone-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="w-4 h-4 text-amber-400" />
+                <label className="text-xs font-bold text-amber-300 uppercase">
+                  Inventory & Stock Control
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTrackInventory(!trackInventory)}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  trackInventory
+                    ? 'bg-amber-500 text-stone-950 shadow-xs'
+                    : 'bg-stone-900 text-stone-400 border border-stone-700'
+                }`}
+              >
+                <span>{trackInventory ? '✓ Track Stock' : 'Untracked'}</span>
+              </button>
+            </div>
+
+            {trackInventory && (
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-300 uppercase mb-1">
+                    Current Stock Qty
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(Math.max(0, Number(e.target.value)))}
+                    className="w-full px-3 py-2 text-xs font-bold bg-stone-900 border border-stone-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-300 uppercase mb-1">
+                    Low Stock Alert (≤)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="1"
+                      value={lowStockThreshold}
+                      onChange={(e) => setLowStockThreshold(Math.max(1, Number(e.target.value)))}
+                      className="w-full pl-3 pr-8 py-2 text-xs font-bold bg-stone-900 border border-stone-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
               </div>
             )}
           </div>

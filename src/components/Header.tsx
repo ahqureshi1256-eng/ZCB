@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShopSettings, Order } from '../types';
+import { ShopSettings, Order, AuthUser } from '../types';
 import { formatPrice } from '../utils/billing';
 import { ZcbLogo } from './ZcbLogo';
 import { posSound } from '../utils/audio';
@@ -9,6 +9,7 @@ import {
   Volume2,
   VolumeX,
   Printer,
+  Bluetooth,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -16,46 +17,65 @@ import {
   ReceiptText,
   Globe,
   Bell,
+  BellOff,
+  CheckCircle,
   Bike,
-  Share2,
-  Download,
-  Smartphone,
   MoreVertical,
   BookOpen,
+  Share2,
+  Trash2,
+  RotateCcw,
+  Mail,
+  MapPin,
+  ShieldCheck,
+  User,
+  Smartphone,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 interface HeaderProps {
   shop: ShopSettings;
   orders: Order[];
+  currentUser?: AuthUser | null;
+  onOpenGoogleAuth?: () => void;
+  isBellRinging?: boolean;
+  onAcceptAndStopBell?: () => void;
+  onRingBell?: () => void;
   onOpenEditShop: () => void;
   onOpenHistory: () => void;
   onOpenKhata?: () => void;
   onOpenPrinterSetup?: () => void;
+  onOpenPosSettings?: () => void;
+  onOpenShareLink?: () => void;
+  onOpenGmail?: () => void;
+  onOpenGoogleMaps?: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
   onSwitchToCustomerSite?: () => void;
-  onOpenShareLink?: () => void;
-  onOpenInstallApp?: () => void;
-  onSimulateOrder?: () => void;
   pendingOnlineCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   shop,
   orders,
+  currentUser,
+  onOpenGoogleAuth,
+  isBellRinging = false,
+  onAcceptAndStopBell,
+  onRingBell,
   onOpenEditShop,
   onOpenHistory,
   onOpenKhata,
   onOpenPrinterSetup,
+  onOpenPosSettings,
+  onOpenShareLink,
+  onOpenGmail,
+  onOpenGoogleMaps,
   soundEnabled,
   onToggleSound,
   onSwitchToCustomerSite,
-  onOpenShareLink,
-  onOpenInstallApp,
-  onSimulateOrder,
   pendingOnlineCount = 0,
 }) => {
-  const [showBannerFull, setShowBannerFull] = useState(true);
   const [isThreeDotsOpen, setIsThreeDotsOpen] = useState(false);
   const todayTotal = orders.reduce((sum, o) => sum + o.totalAmount, 0);
 
@@ -68,126 +88,64 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const handleTestBell = () => {
-    posSound.testVoiceAlert(shop.cashierName || 'مزمل');
+    posSound.testVoiceAlert(shop.cashierName || 'Muzammil');
   };
 
   return (
-    <header className="text-white shadow-xl sticky top-0 z-30 flex flex-col">
-      {/* Top ZCB Brand Hero Banner (Collapsible/Expandable) */}
-      {shop.bannerUrl && (
-        <div className="relative bg-black border-b border-amber-500/30 overflow-hidden select-none">
-          <div className="relative w-full max-h-36 sm:max-h-44 md:max-h-52 overflow-hidden">
-            <img
-              src={shop.bannerUrl}
-              alt="ZCB Zaiqa Chicken Biryani Banner"
-              className={`w-full object-cover object-center transition-all duration-300 ${
-                showBannerFull ? 'h-28 sm:h-36 md:h-44 opacity-95 filter brightness-105' : 'h-11 opacity-75'
-              }`}
-            />
-            {/* Dark Vignette Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-stone-950/85 via-transparent to-stone-950/85" />
+    <header className="text-white shadow-xl relative z-30 select-none">
+      {/* Compact ZCB Biryani Banner Header with All Controls & Information Directly on the Banner */}
+      <div id="header-top-banner-container" className="relative w-full overflow-hidden border-b-2 border-amber-500/50 bg-stone-950 py-2 sm:py-2.5 px-3 sm:px-6 shadow-xl">
+        {/* Banner Background Image */}
+        {shop.bannerUrl && (
+          <img
+            src={shop.bannerUrl}
+            alt="ZCB Biryani Banner"
+            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-65 contrast-110 pointer-events-none"
+          />
+        )}
+        {/* Rich Dark Tint Overlays for Perfect Contrast and Legibility */}
+        <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-[1.5px] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-950/75 to-stone-950/90 pointer-events-none" />
 
-            {/* Banner Floating Overlay Badges */}
-            <div className="absolute inset-0 flex items-center justify-between px-4 md:px-8 pointer-events-none">
-              <div className="flex items-center gap-3">
-                {/* Exact Official ZCB Logo */}
-                <ZcbLogo className="w-14 h-14 sm:w-20 sm:h-20 border-2 border-amber-400 shadow-xl" imageUrl={shop.logoUrl} />
-                <div className="drop-shadow-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-amber-500 text-stone-950 text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded tracking-widest uppercase shadow-md">
-                      {shop.shortName || 'ZCB'} OFFICIAL POS
-                    </span>
-                    <span className="hidden sm:inline-block bg-emerald-700/90 text-emerald-100 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/40 tracking-wider">
-                      🛵 BIKE DELIVERY & THERMAL PRINT
-                    </span>
-                  </div>
-                  <h1 className="text-xl sm:text-3xl font-black text-amber-100 tracking-wide mt-0.5 uppercase">
-                    {shop.shopNameEn || 'Zaiqa Chicken Biryani'}
-                  </h1>
-                  <p className="text-xs sm:text-sm font-semibold text-amber-300 tracking-wider">
-                    {shop.taglineEn || 'Food Prepared Fresh on Order'} • Tel: {shop.phone}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right side banner toggle button */}
-              <div className="pointer-events-auto hidden sm:flex items-center gap-2">
-                <button
-                  onClick={() => setShowBannerFull(!showBannerFull)}
-                  className="px-2.5 py-1 rounded-lg bg-stone-900/80 hover:bg-stone-800 text-amber-200 text-xs font-medium border border-amber-500/30 backdrop-blur-xs flex items-center gap-1 transition-colors cursor-pointer"
-                >
-                  {showBannerFull ? (
-                    <>
-                      <ChevronUp className="w-3.5 h-3.5" />
-                      <span>Collapse Banner</span>
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3.5 h-3.5" />
-                      <span>View Full Banner</span>
-                    </>
-                  )}
-                </button>
-              </div>
+        {/* Content & Controls positioned directly ON TOP of the banner */}
+        <div className="relative z-10 max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          {/* Left Title & Status with Enlarged Crisp Logo */}
+          <div className="flex items-center gap-3">
+            {/* Prominent Official ZCB Logo */}
+            <div className="relative group shrink-0">
+              <ZcbLogo
+                className="w-13 h-13 sm:w-15 sm:h-15 border-2 border-amber-400 shadow-xl rounded-full bg-stone-950 ring-2 ring-amber-400/40"
+                imageUrl={shop.logoUrl}
+              />
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Main Control Bar */}
-      <div className="bg-gradient-to-r from-stone-950 via-stone-900 to-amber-950 border-b border-amber-700/30 px-3 sm:px-6 py-2 sm:py-2.5">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
-          {/* Left Title & Status */}
-          <div className="flex items-center gap-2.5">
-            <ZcbLogo className="w-9 h-9 border border-amber-400/60 shadow-sm shrink-0" imageUrl={shop.logoUrl} />
+            {/* Crisp Elevated Title & Details */}
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-base sm:text-lg font-black text-amber-200 tracking-wide">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-base sm:text-xl md:text-2xl font-black text-amber-200 tracking-wide uppercase drop-shadow-md">
                   {shop.shortName || 'ZCB'} - {shop.shopNameEn}
                 </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 bg-amber-500/20 text-amber-300 rounded border border-amber-500/40">
+                <span className="text-[10px] sm:text-[11px] uppercase font-black tracking-wider px-2 py-0.5 bg-amber-500 text-stone-950 rounded-lg shadow-sm">
                   POS TERMINAL
                 </span>
               </div>
-              <div className="text-[11px] text-stone-400 flex items-center gap-2 font-medium">
-                <span>{shop.taglineEn || 'Food Prepared Fresh on Order'}</span>
-                <span className="text-stone-600">•</span>
-                <span className="text-[11px] text-amber-300/90 font-sans flex items-center gap-1">
-                  <Phone className="w-3 h-3 inline text-amber-400" />
+              <div className="text-xs text-stone-200 flex items-center gap-2 font-medium flex-wrap mt-0.5 drop-shadow-sm">
+                <span className="text-amber-300 font-bold">{shop.taglineEn || 'Food Prepared Fresh on Order'}</span>
+                <span className="text-stone-400">•</span>
+                <span className="text-xs text-amber-200 font-sans font-bold flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5 inline text-amber-400" />
                   {shop.phone}
+                </span>
+                <span className="text-stone-400">•</span>
+                <span className="text-xs text-stone-300">
+                  Cashier: <strong className="text-amber-300 font-bold">{shop.cashierName || 'Muzammil'}</strong>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Right Action Widgets */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Share Customer Ordering Link for TikTok & WhatsApp */}
-            {onOpenShareLink && (
-              <button
-                onClick={onOpenShareLink}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer ring-1 ring-pink-400"
-                title="Get Customer Website Link for TikTok Bio & WhatsApp sharing"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>🔗 TikTok & WhatsApp لنک</span>
-              </button>
-            )}
-
-            {/* Install / Download Mobile App Button */}
-            {onOpenInstallApp && (
-              <button
-                onClick={onOpenInstallApp}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs"
-                title="Download and Install Mobile App on your phone"
-              >
-                <Download className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">📲 ایپ ڈاؤن لوڈ کریں</span>
-                <span className="sm:hidden">📲 ایپ</span>
-              </button>
-            )}
-
+          {/* Right Action Widgets - Positioned right on the banner */}
+          <div id="header-right-action-widgets" className="flex items-center gap-2 flex-wrap">
             {/* View Customer Online Ordering Website Button */}
             {onSwitchToCustomerSite && (
               <button
@@ -205,25 +163,33 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Test Voice Order Bell Button ("اے مزمل آرڈر اٹھاؤ!") */}
-            <button
-              onClick={handleTestBell}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-950/90 hover:bg-red-900 text-red-100 border border-red-600/70 rounded-xl text-xs font-black transition-colors cursor-pointer shadow-xs"
-              title={`Test Talking Bell: "اے ${shop.cashierName || 'مزمل'}، آرڈر اٹھاؤ!"`}
-            >
-              <Bell className="w-3.5 h-3.5 text-amber-400 animate-bounce" />
-              <span>🔊 ٹیسٹ آواز ({shop.cashierName || 'مزمل'})</span>
-            </button>
-
-            {/* Simulate Customer Order Button */}
-            {onSimulateOrder && (
+            {/* Continuous Bell Ringing & Single-Button "Accept Order & Stop Bell" */}
+            {isBellRinging ? (
+              <div className="flex items-center gap-1.5 animate-pulse">
+                <button
+                  onClick={onAcceptAndStopBell}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-red-600 via-emerald-600 to-emerald-500 hover:from-red-500 hover:to-emerald-400 text-white border-2 border-white rounded-xl text-xs font-black transition-transform active:scale-95 cursor-pointer shadow-xl ring-4 ring-red-500/50"
+                  title="Accept incoming order and silence bell"
+                >
+                  <BellOff className="w-4 h-4 text-white animate-bounce" />
+                  <span>🔔 Accept Order & Stop Bell</span>
+                </button>
+                <button
+                  onClick={onAcceptAndStopBell}
+                  className="px-2 py-1.5 bg-red-900/90 hover:bg-red-800 text-red-200 border border-red-500 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  title="Stop bell"
+                >
+                  🛑 Silence
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={onSimulateOrder}
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border border-emerald-700/50 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-                title="Test incoming online bike delivery order alert"
+                onClick={onRingBell || handleTestBell}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-950/90 hover:bg-red-900 text-red-100 border border-red-600/70 rounded-xl text-xs font-black transition-colors cursor-pointer shadow-xs"
+                title={`Ring Bell alert: "Order Alert for Cashier"`}
               >
-                <Bike className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden md:inline">+ Demo Order</span>
+                <Bell className="w-3.5 h-3.5 text-amber-400" />
+                <span>🔊 Ring Bell ({shop.cashierName || 'Cashier'})</span>
               </button>
             )}
 
@@ -231,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div
               onClick={onOpenHistory}
               className="flex items-center gap-2 px-3 py-1.5 bg-stone-800/90 hover:bg-stone-800 border border-amber-500/30 rounded-xl cursor-pointer transition-all hover:border-amber-400 shadow-xs"
-              title="View today's sales and order history"
+              title="Today's sales total and orders count"
             >
               <div className="text-left">
                 <div className="text-[9px] text-amber-300/80 uppercase font-semibold">Today's Sales:</div>
@@ -244,95 +210,187 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
 
-            {/* Monthly Khata & Udhaar Book Button */}
-            {onOpenKhata && (
-              <button
-                onClick={onOpenKhata}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-stone-950 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer ring-1 ring-emerald-300"
-                title="ماہانہ سیل، مرغی و چاول ادھار کھاتہ (Monthly Ledger)"
-              >
-                <BookOpen className="w-4 h-4 stroke-[2.5]" />
-                <span className="inline">📒 ماہانہ کھاتہ</span>
-              </button>
-            )}
-
-            {/* History Button */}
-            <button
-              onClick={onOpenHistory}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-xl text-xs font-semibold border border-stone-700 transition-colors shadow-2xs cursor-pointer"
-              title="View Order History & Receipts"
-            >
-              <History className="w-4 h-4 text-amber-400" />
-              <span className="hidden sm:inline">History</span>
-            </button>
-
-            {/* Three Dots (⋮) Settings & Actions Menu */}
+            {/* Three Dots (⋮) Settings & All Features Hub Button */}
             <div className="relative">
               <button
+                id="header-three-dots-btn"
                 onClick={() => setIsThreeDotsOpen(!isThreeDotsOpen)}
-                className="p-2 bg-stone-800 hover:bg-stone-700 text-amber-300 rounded-xl border border-stone-700 transition-colors cursor-pointer flex items-center justify-center"
-                title="سیٹنگز اور آپشنز (Menu & Settings)"
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 rounded-xl font-black text-xs sm:text-sm border-2 border-amber-300 shadow-lg transition-all cursor-pointer active:scale-95 ring-2 ring-amber-400/50"
+                title="Open all Settings & Features Hub"
               >
-                <MoreVertical className="w-4 h-4 stroke-[2.5]" />
+                <MoreVertical className="w-5 h-5 stroke-[3] text-stone-950" />
+                <span className="font-black text-stone-950">⚙️ Settings</span>
               </button>
 
               {/* Dropdown Menu */}
               {isThreeDotsOpen && (
                 <div
-                  className="absolute right-0 top-full mt-2 w-56 bg-stone-900 border-2 border-amber-500/80 rounded-2xl shadow-2xl p-2 z-50 text-xs space-y-1 animate-in zoom-in-95 duration-150"
+                  className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-stone-900 border-2 border-amber-500 rounded-2xl shadow-2xl p-2.5 z-50 text-xs space-y-1 animate-in zoom-in-95 duration-150 max-h-[85vh] overflow-y-auto"
                   onClick={() => setIsThreeDotsOpen(false)}
                 >
+                  <div className="px-3 py-1.5 mb-1 bg-stone-950/80 rounded-xl border border-stone-800 flex items-center justify-between">
+                    <span className="font-black text-amber-300 text-xs uppercase tracking-wider">⚙️ Settings & Features Hub</span>
+                    <span className="text-[10px] text-stone-400 font-mono">Select Option</span>
+                  </div>
+
+                  {/* Bluetooth & Thermal Printer Highlighted Entry */}
                   <button
-                    onClick={onOpenEditShop}
-                    className="w-full px-3 py-2 text-left flex items-center gap-2 text-stone-200 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                    onClick={handlePrinterClick}
+                    className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-stone-100 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold border border-amber-500/60 bg-amber-500/15"
                   >
-                    <Store className="w-4 h-4 text-amber-400" />
-                    <span>ریستوران سیٹنگز (Shop Settings)</span>
+                    <Bluetooth className="w-5 h-5 text-amber-400 shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-amber-200">Connect Printer</span>
+                        <span className="text-[10px] bg-amber-400 text-stone-950 font-black px-1.5 py-0.2 rounded">
+                          Bluetooth / 58mm
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-stone-300 font-normal block">تھرمل بلوٹوتھ پرنٹر کنیکٹ کریں</span>
+                    </div>
                   </button>
 
-                  {onOpenKhata && (
+                  {/* Google Account Login & Security */}
+                  {onOpenGoogleAuth && (
                     <button
-                      onClick={onOpenKhata}
-                      className="w-full px-3 py-2 text-left flex items-center gap-2 text-stone-200 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                      onClick={onOpenGoogleAuth}
+                      className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-stone-100 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold border border-amber-500/40 bg-stone-950/40"
                     >
-                      <BookOpen className="w-4 h-4 text-emerald-400" />
-                      <span>مرغی و چاول ادھار کھاتہ (Khata)</span>
+                      <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white">Google Account Auth</span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${currentUser ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'bg-amber-950 text-amber-300 border border-amber-500/40'}`}>
+                            {currentUser ? 'Logged In' : 'Sign In'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-stone-400 font-mono truncate block max-w-[200px]">
+                          {currentUser ? currentUser.email : 'Secure cloud backup with Google'}
+                        </span>
+                      </div>
                     </button>
                   )}
 
-                  {onOpenInstallApp && (
+                  {/* Bulk Kitchen KOT (Group Multiple Bills) */}
+                  <button
+                    onClick={onOpenHistory}
+                    className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-stone-100 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold border border-amber-500/50 bg-amber-500/15"
+                  >
+                    <UtensilsCrossed className="w-5 h-5 text-amber-400 shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-amber-200">Bulk Kitchen KOT</span>
+                        <span className="text-[10px] bg-amber-500 text-stone-950 font-black px-1.5 py-0.2 rounded">
+                          Summary KOT
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-stone-300 font-normal block">
+                        Group multiple bills & print combined chef ticket
+                      </span>
+                    </div>
+                  </button>
+
+
+                  <button
+                    onClick={onOpenHistory}
+                    className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-stone-100 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                  >
+                    <History className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div className="flex-1">
+                      <div>Order History & Reports</div>
+                      <span className="text-[10px] text-stone-400 font-normal">{orders.length} orders saved</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={onOpenEditShop}
+                    className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-stone-100 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                  >
+                    <Store className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div className="flex-1">
+                      <div>Shop Settings</div>
+                      <span className="text-[10px] text-stone-400 font-normal">Name, address, phone & rates</span>
+                    </div>
+                  </button>
+
+                  {onOpenGoogleMaps && (
                     <button
-                      onClick={onOpenInstallApp}
-                      className="w-full px-3 py-2 text-left flex items-center gap-2 text-stone-200 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                      onClick={onOpenGoogleMaps}
+                      className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-emerald-300 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
                     >
-                      <Smartphone className="w-4 h-4 text-amber-400" />
-                      <span>📲 ایپ ڈاؤن لوڈ کریں (Install App)</span>
+                      <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div className="flex-1">
+                        <div>Google Maps Delivery Tracker</div>
+                        <span className="text-[10px] text-stone-400 font-normal">Live rider route & shop GPS</span>
+                      </div>
+                    </button>
+                  )}
+
+                  {onOpenGmail && (
+                    <button
+                      onClick={onOpenGmail}
+                      className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-rose-300 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                    >
+                      <Mail className="w-4 h-4 text-rose-400 shrink-0" />
+                      <div className="flex-1">
+                        <div>Gmail Receipts & Reports</div>
+                        <span className="text-[10px] text-stone-400 font-normal">Email receipts to customers</span>
+                      </div>
+                    </button>
+                  )}
+
+                  {onSwitchToCustomerSite && (
+                    <button
+                      onClick={onSwitchToCustomerSite}
+                      className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-amber-300 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                    >
+                      <Globe className="w-4 h-4 text-amber-400 shrink-0" />
+                      <div className="flex-1">
+                        <div>Customer Online Portal</div>
+                        <span className="text-[10px] text-stone-400 font-normal">Open customer ordering website</span>
+                      </div>
                     </button>
                   )}
 
                   {onOpenShareLink && (
                     <button
                       onClick={onOpenShareLink}
-                      className="w-full px-3 py-2 text-left flex items-center gap-2 text-stone-200 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                      className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-emerald-300 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
                     >
-                      <Share2 className="w-4 h-4 text-blue-400" />
-                      <span>🔗 کسٹمر ویب لنک شیئر کریں</span>
+                      <Share2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div className="flex-1">
+                        <div>Share Website Link & QR Code</div>
+                        <span className="text-[10px] text-stone-400 font-normal">Send WhatsApp links to customers</span>
+                      </div>
+                    </button>
+                  )}
+
+                  {onOpenKhata && (
+                    <button
+                      onClick={onOpenKhata}
+                      className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-stone-100 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                    >
+                      <BookOpen className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div className="flex-1">
+                        <div>Supplies & Expense Ledger (Khata)</div>
+                        <span className="text-[10px] text-stone-400 font-normal">Chicken, rice, spices & balance</span>
+                      </div>
                     </button>
                   )}
 
                   <button
                     onClick={onToggleSound}
-                    className="w-full px-3 py-2 text-left flex items-center gap-2 text-stone-200 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
+                    className="w-full px-3 py-2 text-left flex items-center gap-2.5 text-stone-200 hover:bg-stone-800 rounded-xl transition-colors cursor-pointer font-bold"
                   >
                     {soundEnabled ? (
                       <>
-                        <Volume2 className="w-4 h-4 text-emerald-400" />
-                        <span>آواز فعال ہے (Mute Sound)</span>
+                        <Volume2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Mute Sound</span>
                       </>
                     ) : (
                       <>
-                        <VolumeX className="w-4 h-4 text-stone-500" />
-                        <span>آواز بند ہے (Unmute Sound)</span>
+                        <VolumeX className="w-4 h-4 text-stone-500 shrink-0" />
+                        <span>Unmute Sound</span>
                       </>
                     )}
                   </button>
@@ -342,7 +400,8 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={onOpenEditShop}
                       className="w-full px-3 py-2 text-left flex items-center gap-2 text-rose-400 hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer font-bold"
                     >
-                      <span>🔄 ری سیٹ ڈیٹا (Reset App Data)</span>
+                      <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>🔄 Reset App Data</span>
                     </button>
                   </div>
                 </div>

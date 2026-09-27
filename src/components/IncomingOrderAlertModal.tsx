@@ -15,6 +15,8 @@ import {
   Clock,
   Receipt,
   X,
+  BellOff,
+  Zap,
 } from 'lucide-react';
 
 interface IncomingOrderAlertModalProps {
@@ -41,16 +43,39 @@ export const IncomingOrderAlertModal: React.FC<IncomingOrderAlertModalProps> = (
   if (!isOpen || !order) return null;
 
   const [riderInput, setRiderInput] = React.useState<string>(order.riderName || 'Bike Rider Ali #1');
+  const [hasAccepted, setHasAccepted] = React.useState<boolean>(false);
+  const [autoAcceptCountdown, setAutoAcceptCountdown] = React.useState<number | null>(
+    shop.autoAcceptOnlineOrders ? 4 : null
+  );
 
-  const handlePrint = () => {
+  const handleAcceptOrder = React.useCallback(() => {
     posSound.stopContinuousOrderBell();
+    posSound.speakOrderAccepted(shop.cashierName || 'Muzammil');
+    setHasAccepted(true);
+    setAutoAcceptCountdown(null);
     const updatedOrder = {
       ...order,
       riderName: riderInput,
       orderStatus: 'accepted' as const,
     };
     onAcceptAndPrint(updatedOrder);
-  };
+  }, [order, riderInput, shop.cashierName, onAcceptAndPrint]);
+
+  // Handle auto-accept countdown if enabled in POS device settings
+  React.useEffect(() => {
+    if (!shop.autoAcceptOnlineOrders || autoAcceptCountdown === null || hasAccepted) return;
+
+    if (autoAcceptCountdown <= 0) {
+      handleAcceptOrder();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setAutoAcceptCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [autoAcceptCountdown, shop.autoAcceptOnlineOrders, hasAccepted, handleAcceptOrder]);
 
   const handleOpenWhatsApp = () => {
     if (!order.customerPhone) return;
@@ -77,33 +102,43 @@ export const IncomingOrderAlertModal: React.FC<IncomingOrderAlertModalProps> = (
                   {order.orderType === 'delivery' ? '🛵 BIKE DELIVERY ORDER' : '🛍️ ONLINE ORDER'}
                 </span>
                 <span className="text-xs bg-red-800 text-white font-bold px-2.5 py-0.5 rounded-full animate-pulse flex items-center gap-1">
-                  <span>🗣️ "اے {shop.cashierName || 'مزمل'}، آرڈر اٹھاؤ!"</span>
+                  <span>🗣️ "New Incoming Online Order!"</span>
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-0.5">
-                نیا آرڈر ٹوکن #{order.tokenNumber}
+                New Order Token #{order.tokenNumber}
               </h2>
             </div>
           </div>
 
           <div className="flex items-center gap-2 relative z-10">
-            {/* Direct Accept / Lift Order Button in Header */}
+            {/* Direct Accept / Lift Order & Stop Bell Button in Header */}
             <button
-              onClick={handlePrint}
+              onClick={handleAcceptOrder}
               className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-black text-xs shadow-lg transition-transform active:scale-95 cursor-pointer flex items-center gap-1.5 ring-2 ring-white animate-pulse"
-              title="آرڈر اٹھائیں اور گھنٹی بند کریں"
+              title="Accept Order & Stop Alert Bell"
             >
               <CheckCircle className="w-4 h-4 stroke-[3]" />
-              <span>آرڈر اٹھائیں!</span>
+              <span>🔔 Accept & Stop Bell</span>
+            </button>
+
+            {/* Dedicated Stop Bell button in Header */}
+            <button
+              onClick={() => posSound.stopContinuousOrderBell()}
+              className="px-2.5 py-2 rounded-xl bg-red-950/90 hover:bg-red-900 text-red-200 border border-red-500/60 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+              title="Stop Bell Sound"
+            >
+              <BellOff className="w-4 h-4 text-red-400" />
+              <span>🛑 Stop Bell</span>
             </button>
 
             {/* Replay Voice Alert */}
             <button
-              onClick={() => posSound.speakVoiceAlert(shop.cashierName || 'مزمل')}
+              onClick={() => posSound.speakVoiceAlert(shop.cashierName || 'Cashier')}
               className="px-2.5 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 text-amber-200 border border-amber-400/40 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
               title="Replay Voice Call"
             >
-              <span>🔊 سنیں</span>
+              <span>🔊 Replay</span>
             </button>
 
             {/* Mute Bell Button */}
@@ -279,14 +314,45 @@ export const IncomingOrderAlertModal: React.FC<IncomingOrderAlertModalProps> = (
           )}
         </div>
 
+        {/* Auto-Accept Countdown Banner for POS Machine */}
+        {shop.autoAcceptOnlineOrders && autoAcceptCountdown !== null && autoAcceptCountdown > 0 && (
+          <div className="bg-amber-500/20 border-t border-b border-amber-500/40 px-4 py-2 flex items-center justify-between text-xs">
+            <span className="font-bold text-amber-300 flex items-center gap-1.5 animate-pulse">
+              <Zap className="w-4 h-4 text-emerald-400" />
+              <span>POS Auto-Order: Accepting & printing bill in {autoAcceptCountdown}s...</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setAutoAcceptCountdown(null)}
+              className="px-2 py-0.5 rounded bg-stone-800 text-[11px] font-bold text-stone-300 hover:text-white"
+            >
+              Pause
+            </button>
+          </div>
+        )}
+
         {/* Modal Actions */}
         <div className="p-4 bg-stone-950 border-t border-stone-800 flex flex-col sm:flex-row gap-2.5">
           <button
-            onClick={handlePrint}
+            onClick={handleAcceptOrder}
             className="flex-1 py-4 px-4 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 hover:from-emerald-400 hover:to-emerald-300 text-stone-950 font-black text-base sm:text-lg rounded-2xl flex items-center justify-center gap-2.5 shadow-2xl shadow-emerald-500/30 active:scale-[0.98] transition-all cursor-pointer ring-4 ring-emerald-400/50 animate-pulse"
           >
-            <CheckCircle className="w-6 h-6 stroke-[3] text-stone-950" />
-            <span>آرڈر اٹھائیں اور بل پرنٹ کریں (ACCEPT & LIFT ORDER)</span>
+            <Printer className="w-6 h-6 stroke-[2.5] text-stone-950" />
+            <div className="text-left sm:text-center leading-tight">
+              <span className="block text-base sm:text-lg">✅ Accept & Print Thermal Bill</span>
+              <span className="text-[11px] font-bold opacity-80 block font-sans">
+                {shop.autoPrintOnAccept !== false ? '🖨️ Auto-Print Attached POS Machine' : 'Accept & Print Receipt'}
+              </span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => posSound.stopContinuousOrderBell()}
+            className="py-3 px-4 bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-600/70 font-bold text-xs sm:text-sm rounded-2xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md"
+            title="Stop alert bell sound"
+          >
+            <BellOff className="w-4 h-4 text-red-400" />
+            <span>🛑 Stop Bell</span>
           </button>
 
           <div className="flex gap-2">
@@ -305,7 +371,7 @@ export const IncomingOrderAlertModal: React.FC<IncomingOrderAlertModalProps> = (
               }}
               className="py-3 px-4 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-xs rounded-2xl transition-colors cursor-pointer"
             >
-              بعد میں (Later)
+              Later
             </button>
           </div>
         </div>

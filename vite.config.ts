@@ -16,12 +16,13 @@ export default defineConfig(() => {
           'apple-touch-icon.png',
           'pwa-192x192.png',
           'pwa-512x512.png',
+          'pwa-maskable-512x512.png',
         ],
         manifest: {
           id: '/',
           name: 'ZCB - Zaiqa Chicken Biryani',
           short_name: 'ZCB Biryani',
-          description: 'Official ZCB Zaiqa Chicken Biryani Fast Food & Online Ordering.',
+          description: 'Official ZCB Zaiqa Chicken Biryani Fast Food, POS Billing & Offline Thermal Printing.',
           theme_color: '#FED800',
           background_color: '#1c1917',
           display: 'standalone',
@@ -48,15 +49,78 @@ export default defineConfig(() => {
             },
           ],
         },
+        workbox: {
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json}'],
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api/],
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-stylesheets',
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-webfonts',
+                expiration: {
+                  maxEntries: 20,
+                  maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'static-images-cache',
+                expiration: {
+                  maxEntries: 60,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              urlPattern: /^https:\/\/.*\/.*(?:\.js|\.css)$/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'static-resources-cache',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+                },
+              },
+            },
+          ],
+        },
         devOptions: {
-          enabled: true,
-          type: 'module',
+          enabled: false,
         },
       }),
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(process.cwd(), '.'),
       },
     },
     server: {
